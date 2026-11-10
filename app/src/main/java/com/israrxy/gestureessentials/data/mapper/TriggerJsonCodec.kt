@@ -16,12 +16,6 @@ internal object TriggerJsonCodec {
                 put("sensitivity", trigger.sensitivity)
             }
 
-            is Trigger.VolumeKey -> {
-                put("direction", trigger.direction.key)
-                put("presses", trigger.presses)
-                put("longPress", trigger.longPress)
-            }
-
             is Trigger.Screen -> put("state", trigger.state.key)
             is Trigger.Charger -> put("plugged", trigger.plugged)
             is Trigger.Headset -> put("plugged", trigger.plugged)
@@ -43,12 +37,6 @@ internal object TriggerJsonCodec {
             TriggerType.SHAKE.key -> Trigger.Shake(
                 count = obj.int("count", 2),
                 sensitivity = obj.int("sensitivity", 55),
-            )
-
-            TriggerType.VOLUME_KEY.key -> Trigger.VolumeKey(
-                direction = Trigger.Direction.fromKey(obj.string("direction")),
-                presses = obj.int("presses", 2),
-                longPress = obj.bool("longPress", false),
             )
 
             TriggerType.FACE_DOWN.key -> Trigger.FaceDown

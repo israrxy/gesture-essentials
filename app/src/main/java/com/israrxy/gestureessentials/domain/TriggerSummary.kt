@@ -8,7 +8,6 @@ import com.israrxy.gestureessentials.core.model.Trigger
  */
 fun Trigger.summary(): String = when (this) {
     is Trigger.Shake -> "Shake x$count"
-    is Trigger.VolumeKey -> "Volume ${direction.key} x$presses"
     is Trigger.Screen -> "Screen ${state.key}"
     is Trigger.Charger -> if (plugged) "Charger plugged" else "Charger unplugged"
     is Trigger.Headset -> if (plugged) "Headset plugged" else "Headset unplugged"

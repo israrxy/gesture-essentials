@@ -16,7 +16,6 @@ object TriggerCatalog {
 
     val entries: List<TriggerEntry> = listOf(
         TriggerEntry(TriggerType.SHAKE, "Shake", "Shake the phone two or three times") { Trigger.Shake() },
-        TriggerEntry(TriggerType.VOLUME_KEY, "Volume key", "Press a volume key once or twice") { Trigger.VolumeKey() },
         TriggerEntry(TriggerType.FACE_DOWN, "Face down", "Place the phone screen-down") { Trigger.FaceDown },
         TriggerEntry(TriggerType.SCREEN_STATE, "Screen", "Screen turns off or is unlocked") { Trigger.Screen() },
         TriggerEntry(

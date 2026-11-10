@@ -5,12 +5,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
 import androidx.core.content.ContextCompat
 import com.israrxy.gestureessentials.GestureEssentialsApp
 import com.israrxy.gestureessentials.core.model.TriggerEvent
-import com.israrxy.gestureessentials.runtime.keys.KeyPatternDetector
 import com.israrxy.gestureessentials.runtime.screen.ScreenToggleDetector
 import com.israrxy.gestureessentials.runtime.sensor.ShakeDetector
 
@@ -24,16 +22,14 @@ class GestureAccessibilityService : AccessibilityService() {
         get() = (application as GestureEssentialsApp).graph.triggerBus
 
     private var shakeDetector: ShakeDetector? = null
-    private var keyDetector: KeyPatternDetector? = null
     private var screenDetector: ScreenToggleDetector? = null
     private var receiver: BroadcastReceiver? = null
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         AccessibilityServiceRef.service = this
-        if (keyDetector != null) return
+        if (receiver != null) return
 
-        keyDetector = KeyPatternDetector(triggerBus::emit)
         screenDetector = ScreenToggleDetector(triggerBus::emit)
         shakeDetector = ShakeDetector(this, emit = triggerBus::emit).also { it.start() }
         registerSystemReceiver()
@@ -44,12 +40,6 @@ class GestureAccessibilityService : AccessibilityService() {
         val packageName = event.packageName?.toString() ?: return
         if (packageName == this.packageName) return
         triggerBus.emit(TriggerEvent.AppForeground(packageName))
-    }
-
-    override fun onKeyEvent(event: KeyEvent): Boolean {
-        keyDetector?.onKeyEvent(event)
-        // Never consume: the volume keys must keep their normal behaviour.
-        return false
     }
 
     override fun onInterrupt() = Unit
@@ -105,7 +95,6 @@ class GestureAccessibilityService : AccessibilityService() {
         AccessibilityServiceRef.service = null
         shakeDetector?.stop()
         shakeDetector = null
-        keyDetector = null
         screenDetector = null
         receiver?.let { runCatching { unregisterReceiver(it) } }
         receiver = null

@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">Gesture Essentials</string>
-    <string name="accessibility_service_description">Listens for shakes, volume-key patterns and screen events so your rules can run. It never reads screen content.</string>
+    <string name="accessibility_service_description">Lets your rules react to shakes, screen changes and app switches. It never reads screen content and never intercepts volume keys.</string>
 </resources>

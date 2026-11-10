@@ -11,14 +11,6 @@ sealed interface Trigger {
         override val type = TriggerType.SHAKE
     }
 
-    data class VolumeKey(
-        val direction: Direction = Direction.DOWN,
-        val presses: Int = 2,
-        val longPress: Boolean = false,
-    ) : Trigger {
-        override val type = TriggerType.VOLUME_KEY
-    }
-
     data object FaceDown : Trigger {
         override val type = TriggerType.FACE_DOWN
     }
@@ -53,15 +45,6 @@ sealed interface Trigger {
 
     data class Manual(val source: ManualSource = ManualSource.TILE) : Trigger {
         override val type = TriggerType.MANUAL
-    }
-
-    enum class Direction(val key: String) {
-        UP("up"),
-        DOWN("down");
-
-        companion object {
-            fun fromKey(key: String?): Direction = entries.firstOrNull { it.key == key } ?: DOWN
-        }
     }
 
     enum class ScreenEvent(val key: String) {

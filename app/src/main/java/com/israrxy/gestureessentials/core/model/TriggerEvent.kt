@@ -7,12 +7,6 @@ package com.israrxy.gestureessentials.core.model
 sealed interface TriggerEvent {
     data class Shake(val count: Int) : TriggerEvent
 
-    data class VolumeKey(
-        val direction: Trigger.Direction,
-        val presses: Int,
-        val longPress: Boolean,
-    ) : TriggerEvent
-
     data object FaceDown : TriggerEvent
 
     data class Screen(val state: Trigger.ScreenEvent) : TriggerEvent

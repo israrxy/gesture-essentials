@@ -44,8 +44,11 @@ debug keystore checked into `keystore/`).
 
 ### Runtime coverage
 
-Working triggers: shake, volume keys (short and long press), screen on/off/unlock,
-power double-press heuristic, charger, headset, app foreground, manual.
+Working triggers: shake, screen on/off/unlock, power double-press heuristic,
+charger, headset, app foreground, manual.
+
+Volume keys are deliberately **not** a trigger. The app never asks for key-event
+filtering, so the volume keys stay purely system sound controls.
 
 Working actions: flashlight, media play/pause-next-previous, lock screen,
 screenshot (Android 11+), vibrate, Do Not Disturb, open URL, speak, wait.
