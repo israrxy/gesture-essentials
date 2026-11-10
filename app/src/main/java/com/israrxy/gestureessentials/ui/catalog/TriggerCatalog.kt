@@ -33,6 +33,11 @@ object TriggerCatalog {
         TriggerEntry(TriggerType.MANUAL, "Manual", "Quick settings tile or floating bubble") { Trigger.Manual() },
     )
 
+    /** Only offer triggers with a live source; legacy rules still have summaries. */
+    val selectableEntries = entries.filter { entry ->
+        entry.type !in setOf(TriggerType.FACE_DOWN, TriggerType.WIFI, TriggerType.LETTER, TriggerType.MANUAL)
+    }
+
     fun entry(type: TriggerType): TriggerEntry = entries.first { it.type == type }
 
     /** Delegates to the domain helper so UI and ViewModel never disagree. */

@@ -4,10 +4,18 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.israrxy.gestureessentials.core.model.AppInfo
 import com.israrxy.gestureessentials.core.model.AppSettings
+import com.israrxy.gestureessentials.core.model.ShortcutPreset
+import com.israrxy.gestureessentials.core.model.Trigger
 import com.israrxy.gestureessentials.data.system.ServiceStatusRepository
 import com.israrxy.gestureessentials.data.system.SystemAccessRepository
+import com.israrxy.gestureessentials.domain.RuleAssignments
+import com.israrxy.gestureessentials.domain.RuleConflictException
+import com.israrxy.gestureessentials.domain.usecase.ObserveRulesUseCase
 import com.israrxy.gestureessentials.domain.usecase.ObserveSettingsUseCase
+import com.israrxy.gestureessentials.domain.usecase.SetPresetEnabledUseCase
+import com.israrxy.gestureessentials.domain.usecase.SetRuleEnabledUseCase
 import com.israrxy.gestureessentials.domain.usecase.UpdateSettingsUseCase
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -17,45 +25,70 @@ import kotlinx.coroutines.launch
 
 class SettingsViewModel(
     appInfo: AppInfo,
-    private val observeSettings: ObserveSettingsUseCase,
+    observeSettings: ObserveSettingsUseCase,
+    observeRules: ObserveRulesUseCase,
     private val updateSettings: UpdateSettingsUseCase,
+    private val setPresetEnabled: SetPresetEnabledUseCase,
+    private val setRuleEnabled: SetRuleEnabledUseCase,
     private val serviceStatus: ServiceStatusRepository,
     private val systemAccess: SystemAccessRepository,
 ) : ViewModel() {
 
-    private val serviceEnabled = MutableStateFlow(serviceStatus.isEnabled())
-    private val dndAccess = MutableStateFlow(systemAccess.hasDndAccess())
-    private val batteryUnrestricted = MutableStateFlow(systemAccess.isIgnoringBatteryOptimizations())
+    private val access = MutableStateFlow(readAccess())
+    private val edit = MutableStateFlow(PendingEdit())
 
     val uiState: StateFlow<SettingsUiState> = combine(
-        observeSettings(),
-        serviceEnabled,
-        dndAccess,
-        batteryUnrestricted,
-    ) { settings, service, dnd, battery ->
+        observeSettings(), observeRules(), access, edit,
+    ) { storedSettings, rules, status, pending ->
+        val settings = pending.settings ?: storedSettings
         SettingsUiState(
             settings = settings,
-            serviceEnabled = service,
-            dndAccess = dnd,
-            batteryUnrestricted = battery,
+            presets = ShortcutPreset.entries.map { preset ->
+                val saved = rules.firstOrNull { it.id == preset.ruleId }
+                val candidate = saved ?: preset.newRule(settings.defaultCooldownMs, 0)
+                val conflict = RuleAssignments.conflictFor(candidate, rules)
+                PresetUiState(
+                    preset = preset,
+                    enabled = if (pending.ruleId == preset.ruleId) pending.enabled else candidate.enabled,
+                    unavailableReason = unavailableReason(preset, status)
+                        ?: conflict?.let { "Assigned to “${it.name}”. Turn it off first." },
+                )
+            },
+            customRules = rules.filter { ShortcutPreset.fromRuleId(it.id) == null }.map { rule ->
+                CustomRuleUiState(
+                    rule = if (pending.ruleId == rule.id) rule.copy(enabled = pending.enabled) else rule,
+                    conflictName = RuleAssignments.conflictFor(rule, rules)?.name,
+                )
+            },
+            isLoading = false,
+            isSaving = pending.isSaving,
+            message = pending.message,
+            serviceEnabled = status.serviceEnabled,
+            dndAccess = status.dndAccess,
+            batteryUnrestricted = status.batteryUnrestricted,
             versionName = appInfo.versionName,
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = SettingsUiState(
-            serviceEnabled = serviceEnabled.value,
-            dndAccess = dndAccess.value,
-            batteryUnrestricted = batteryUnrestricted.value,
-            versionName = appInfo.versionName,
-        ),
+        initialValue = SettingsUiState(versionName = appInfo.versionName),
     )
 
-    /** Called on ON_RESUME: the user may have just returned from a system page. */
     fun refreshStatus() {
-        serviceEnabled.value = serviceStatus.isEnabled()
-        dndAccess.value = systemAccess.hasDndAccess()
-        batteryUnrestricted.value = systemAccess.isIgnoringBatteryOptimizations()
+        access.value = readAccess()
+    }
+
+    fun onPresetToggle(preset: ShortcutPreset, enabled: Boolean) {
+        val row = uiState.value.presets.firstOrNull { it.preset == preset } ?: return
+        if (enabled && row.unavailableReason != null) return
+        val cooldown = uiState.value.settings.defaultCooldownMs
+        change(PendingEdit(ruleId = preset.ruleId, enabled = enabled)) {
+            setPresetEnabled(preset, enabled, cooldown)
+        }
+    }
+
+    fun onCustomRuleToggle(id: String, enabled: Boolean) {
+        change(PendingEdit(ruleId = id, enabled = enabled)) { setRuleEnabled(id, enabled) }
     }
 
     fun onThemeModeChange(mode: AppSettings.ThemeMode) = update { it.copy(themeMode = mode) }
@@ -70,7 +103,64 @@ class SettingsViewModel(
     fun onDefaultCooldownChange(ms: Long) =
         update { it.copy(defaultCooldownMs = ms.coerceIn(0, 60_000)) }
 
+    fun dismissMessage() {
+        edit.value = edit.value.copy(message = null)
+    }
+
     private fun update(transform: (AppSettings) -> AppSettings) {
-        viewModelScope.launch { updateSettings(transform) }
+        change(PendingEdit(settings = transform(uiState.value.settings))) { updateSettings(transform) }
+    }
+
+    private fun change(pending: PendingEdit, block: suspend () -> Unit) {
+        if (edit.value.isSaving || uiState.value.isLoading) return
+        edit.value = pending.copy(isSaving = true)
+        viewModelScope.launch {
+            try {
+                block()
+                edit.value = PendingEdit()
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                edit.value = PendingEdit(
+                    message = if (error is RuleConflictException) error.message
+                    else "Couldn't save the change. Please try again.",
+                )
+            }
+        }
+    }
+
+    private fun readAccess() = AccessState(
+        serviceEnabled = serviceStatus.isEnabled(),
+        dndAccess = systemAccess.hasDndAccess(),
+        batteryUnrestricted = systemAccess.isIgnoringBatteryOptimizations(),
+        hasShakeSensor = systemAccess.hasShakeSensor(),
+        hasFlashlight = systemAccess.hasFlashlight(),
+        supportsScreenshot = systemAccess.supportsScreenshot(),
+    )
+
+    private fun unavailableReason(preset: ShortcutPreset, access: AccessState): String? = when {
+        preset.trigger is Trigger.Shake && !access.hasShakeSensor -> "No shake sensor on this device"
+        preset == ShortcutPreset.SHAKE_SCREENSHOT && !access.supportsScreenshot ->
+            "Requires Android 11 or newer"
+        preset != ShortcutPreset.SHAKE_SCREENSHOT && !access.hasFlashlight ->
+            "No flashlight on this device"
+        else -> null
     }
 }
+
+private data class PendingEdit(
+    val isSaving: Boolean = false,
+    val ruleId: String? = null,
+    val enabled: Boolean = false,
+    val settings: AppSettings? = null,
+    val message: String? = null,
+)
+
+private data class AccessState(
+    val serviceEnabled: Boolean,
+    val dndAccess: Boolean,
+    val batteryUnrestricted: Boolean,
+    val hasShakeSensor: Boolean,
+    val hasFlashlight: Boolean,
+    val supportsScreenshot: Boolean,
+)

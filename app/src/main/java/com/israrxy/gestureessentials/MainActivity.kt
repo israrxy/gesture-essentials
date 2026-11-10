@@ -20,7 +20,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val settings by graph.settingsState.collectAsStateWithLifecycle()
             GestureEssentialsTheme(settings = settings) {
-                AppNavHost(graph = graph)
+                AppNavHost(graph = graph, onFinish = { finish() })
             }
         }
     }

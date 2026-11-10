@@ -4,6 +4,7 @@ object Routes {
     const val HOME = "home"
     const val RULES = "rules"
     const val SETTINGS = "settings"
+    const val MORE_SETTINGS = "more_settings"
 
     /** Optional argument so one destination serves both "new" and "edit". */
     const val EDITOR_PATTERN = "editor?ruleId={ruleId}"

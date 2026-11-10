@@ -26,5 +26,5 @@ echo "Installing $APK (keeping app data)..."
 adb install -r "$APK"
 
 echo "Launching..."
-adb shell am start -n com.israrxy.gestureessentials/.MainActivity
+adb shell am start -n com.israrxy.gestureessentials/.AccessibilitySettingsActivity
 echo "Done."

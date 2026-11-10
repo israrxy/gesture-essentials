@@ -5,36 +5,45 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
+import com.israrxy.gestureessentials.core.model.AppSettings
 import com.israrxy.gestureessentials.core.model.TriggerEvent
 import kotlin.math.abs
 import kotlin.math.sqrt
 
 /**
- * Accelerometer shake detector. After every peak it emits the number of shakes
- * seen in the last second, so rules asking for two or three shakes can coexist
- * and each fires at its own count.
+ * Accelerometer peaks are grouped into one completed sequence. Only its final
+ * count reaches the engine, so a triple shake never also fires a double shake.
  */
 class ShakeDetector(
     context: Context,
     private val emit: (TriggerEvent) -> Unit,
     /** Read on every sensor event so a Settings change applies immediately. */
-    private val sensitivityProvider: () -> Int = { 55 },
+    private val sensitivityProvider: () -> Int = { AppSettings.DEFAULT_SHAKE_SENSITIVITY },
 ) : SensorEventListener {
 
     private val sensorManager = context.getSystemService(SensorManager::class.java)
     private val accelerometer = sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
-    private val peaks = ArrayDeque<Long>()
-    private var gravity = 9.81f
-    private var lastPeakAt = 0L
+    private val handler = Handler(Looper.getMainLooper())
+    private val sequence = ShakeSequence { count -> emit(TriggerEvent.Shake(count)) }
+    private val finishSequence = Runnable { sequence.finishIfQuiet(SystemClock.elapsedRealtime()) }
+    private var gravity: Float? = null
+    private var lastSensitivity = sensitivityProvider()
 
     fun start() {
-        sensorManager?.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME)
+        if (accelerometer != null) {
+            sensorManager?.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME)
+        }
     }
 
     fun stop() {
         sensorManager?.unregisterListener(this)
+        handler.removeCallbacks(finishSequence)
+        sequence.reset()
+        gravity = null
     }
 
     override fun onSensorChanged(event: SensorEvent) {
@@ -43,28 +52,30 @@ class ShakeDetector(
         val z = event.values[2]
         val magnitude = sqrt(x * x + y * y + z * z)
 
-        // Low-pass gravity estimate; the difference is the linear acceleration.
-        gravity = gravity * 0.8f + magnitude * 0.2f
+        val previousGravity = gravity
+        if (previousGravity == null) {
+            gravity = magnitude
+            return
+        }
+        val estimate = previousGravity * 0.8f + magnitude * 0.2f
+        gravity = estimate
 
-        // 0 = only violent shakes, 100 = very light shakes.
-        val threshold = 4.2f - (sensitivityProvider().coerceIn(0, 100) / 100f) * 3.0f
-        if (abs(magnitude - gravity) < threshold) return
+        val sensitivity = sensitivityProvider().coerceIn(0, 100)
+        if (sensitivity != lastSensitivity) {
+            sequence.reset()
+            handler.removeCallbacks(finishSequence)
+            lastSensitivity = sensitivity
+        }
+        // Lower sensitivity requires firmer, deliberate movement.
+        val threshold = 4.2f - (sensitivity / 100f) * 3.0f
+        if (abs(magnitude - estimate) < threshold) return
 
         val now = SystemClock.elapsedRealtime()
-        if (now - lastPeakAt < MIN_PEAK_GAP_MS) return
-        lastPeakAt = now
-
-        peaks.addLast(now)
-        while (peaks.isNotEmpty() && now - peaks.first() > WINDOW_MS) {
-            peaks.removeFirst()
+        if (sequence.onPeak(now)) {
+            handler.removeCallbacks(finishSequence)
+            handler.postDelayed(finishSequence, ShakeSequence.QUIET_MS)
         }
-        emit(TriggerEvent.Shake(peaks.size))
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
-
-    private companion object {
-        const val WINDOW_MS = 1_000L
-        const val MIN_PEAK_GAP_MS = 180L
-    }
 }

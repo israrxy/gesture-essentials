@@ -1,6 +1,7 @@
 package com.israrxy.gestureessentials.data.datastore
 
 import android.content.Context
+import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -17,9 +18,11 @@ import kotlinx.coroutines.flow.map
  * App-wide preferences. Shares the existing DataStore file so the process only
  * ever opens one DataStore instance.
  */
-class SettingsDataSource(private val context: Context) {
+class SettingsDataSource(private val dataStore: DataStore<Preferences>) {
 
-    fun observeSettings(): Flow<AppSettings> = context.rulesDataStore.data
+    constructor(context: Context) : this(context.rulesDataStore)
+
+    fun observeSettings(): Flow<AppSettings> = dataStore.data
         .catch { emit(emptyPreferences()) }
         .map(::decode)
 
@@ -28,7 +31,7 @@ class SettingsDataSource(private val context: Context) {
      * slider cannot overwrite each other with stale values.
      */
     suspend fun update(transform: (AppSettings) -> AppSettings) {
-        context.rulesDataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             val next = transform(decode(preferences))
             preferences[THEME_KEY] = next.themeMode.key
             preferences[DYNAMIC_COLOR_KEY] = next.dynamicColor
@@ -41,7 +44,8 @@ class SettingsDataSource(private val context: Context) {
     private fun decode(preferences: Preferences): AppSettings = AppSettings(
         themeMode = AppSettings.ThemeMode.fromKey(preferences[THEME_KEY]),
         dynamicColor = preferences[DYNAMIC_COLOR_KEY] ?: true,
-        shakeSensitivity = (preferences[SHAKE_SENSITIVITY_KEY] ?: 55).coerceIn(0, 100),
+        shakeSensitivity = (preferences[SHAKE_SENSITIVITY_KEY]
+            ?: AppSettings.DEFAULT_SHAKE_SENSITIVITY).coerceIn(0, 100),
         hapticsEnabled = preferences[HAPTICS_KEY] ?: true,
         defaultCooldownMs = (preferences[DEFAULT_COOLDOWN_KEY] ?: 1_000L)
             .coerceIn(0, MAX_COOLDOWN_MS),

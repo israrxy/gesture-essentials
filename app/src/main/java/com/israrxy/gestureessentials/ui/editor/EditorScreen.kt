@@ -4,11 +4,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -19,15 +21,17 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.israrxy.gestureessentials.core.model.ActionSpec
@@ -43,13 +47,15 @@ fun EditorScreen(
     onBack: () -> Unit,
     onNameChange: (String) -> Unit,
     onTriggerChange: (Trigger) -> Unit,
+    onEnabledChange: (Boolean) -> Unit,
     onAddAction: (ActionSpec) -> Unit,
     onRemoveAction: (Int) -> Unit,
     onSave: () -> Unit,
+    onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var showTriggerPicker by remember { mutableStateOf(false) }
-    var showActionPicker by remember { mutableStateOf(false) }
+    var showTriggerPicker by rememberSaveable { mutableStateOf(false) }
+    var showActionPicker by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier,
@@ -59,6 +65,7 @@ fun EditorScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .consumeWindowInsets(innerPadding)
                 .imePadding(),
         ) {
             ScreenHeader(
@@ -81,14 +88,35 @@ fun EditorScreen(
                         .padding(horizontal = 20.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
+                    state.error?.let { error ->
+                        Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                    }
                     OutlinedTextField(
                         value = state.name,
                         onValueChange = onNameChange,
                         label = { Text("Rule name") },
                         placeholder = { Text("Optional — named after the trigger") },
                         singleLine = true,
+                        enabled = !state.isSaving && !state.isMissing,
                         modifier = Modifier.fillMaxWidth(),
                     )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth().toggleable(
+                            value = state.enabled,
+                            role = Role.Switch,
+                            enabled = !state.isSaving && !state.isMissing,
+                            onValueChange = onEnabledChange,
+                        ),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text("Enable rule", Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                        Switch(
+                            checked = state.enabled,
+                            onCheckedChange = null,
+                            enabled = !state.isSaving && !state.isMissing,
+                        )
+                    }
 
                     SectionCard(title = "When") {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -108,6 +136,7 @@ fun EditorScreen(
                                 Text("Change")
                             }
                         }
+                        TriggerOptions(trigger = state.trigger, onChange = onTriggerChange)
                     }
 
                     SectionCard(title = "Then") {
@@ -127,6 +156,11 @@ fun EditorScreen(
                         }
                         TextButton(onClick = { showActionPicker = true }) {
                             Text("Add action")
+                        }
+                    }
+                    if (!state.isNew && !state.isMissing) {
+                        TextButton(onClick = onDelete, enabled = !state.isSaving) {
+                            Text("Delete rule", color = MaterialTheme.colorScheme.error)
                         }
                     }
                 }

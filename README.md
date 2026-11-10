@@ -46,7 +46,7 @@ debug keystore checked into `keystore/`).
 ### Runtime coverage
 
 Working triggers: shake, screen on/off/unlock, power double-press heuristic,
-charger, headset, app foreground, manual.
+charger, headset and app foreground.
 
 Volume keys are deliberately **not** a trigger. The app never asks for key-event
 filtering, so the volume keys stay purely system sound controls.
@@ -54,26 +54,37 @@ filtering, so the volume keys stay purely system sound controls.
 Working actions: flashlight, media play/pause-next-previous, lock screen,
 screenshot (Android 11+), vibrate, Do Not Disturb, open URL, speak, wait.
 
-Not wired yet: face-down, Wi-Fi network changes and drawn letters. Rules using
-those triggers are saved but stay inert; they land in M3 rather than pretending
-to work.
+Not wired yet: face-down, Wi-Fi network changes, drawn letters and manual entry
+points (tile/bubble/notification). They are excluded from the custom-rule picker;
+previously saved rules using them remain stored but cannot fire yet.
 
-Branches: `main` holds the last verified, installable build. `dev` is where the
-next milestone is built. Both are fast-forwarded together once a build passes
-and is installed.
+Branches: `main` holds the last user-verified, installable build. `dev` is where
+the next milestone is built; it is promoted after user verification.
 
 ## Settings
 
-Open preferences from **Android Settings → Accessibility → Gesture Essentials →
-Settings**, or use the gear on Home. Android's service page links directly to
-the same saved preferences through the service's `android:settingsActivity`:
+Open **Android Settings → Accessibility → Downloaded apps → Gesture Essentials →
+Settings** (the service-list name varies by phone). The app has no launcher entry.
+Android's service page opens preferences through `android:settingsActivity`.
 
-- Theme (system/light/dark) and dynamic color
-- Shake sensitivity, applied live to every shake rule
-- Haptic tick when a rule runs
-- Default cooldown for newly created rules
-- Live status for the accessibility service, DND access and battery
-  optimization, with a button that opens the matching system page
+The page is a compact preference list:
+
+1. **Common shortcuts** — separate saved switches for shake twice → flashlight
+   on/off, shake three times → screenshot, and screen off → flashlight off.
+   New presets start disabled.
+2. **Custom rules** — saved rules with enable switches, Edit, and Add custom rule.
+3. **Preferences** — shake sensitivity (default **25%, Low**) and haptic feedback.
+4. **More settings** — theme, wallpaper colors, default cooldown, system access
+   status and About.
+
+Presets use stable rule IDs. Enabling an already-assigned gesture is blocked with
+the conflicting rule's name; turn that assignment off first. Custom rules can
+also be saved disabled. Multiple actions can be placed in one custom rule.
+Existing custom rules and explicitly saved sensitivity values are preserved.
+
+Shake counts are exact: a burst waits for **450 ms of quiet** before firing once.
+A triple shake cannot also trigger the double-shake shortcut. The flashlight
+handler tracks changes from Android Quick Settings as well as its own actions.
 
 The system's Settings entry opens a dedicated preferences activity. Back returns
 to the caller, and it works even when the accessibility service is disabled.
@@ -83,6 +94,10 @@ app's settings activity.
 Android does not allow an app to enable its own accessibility service or grant
 itself DND/battery exemptions. Those rows are honest deep links, not fake
 toggles.
+
+The single CI workflow runs JVM tests for shake sequences, assignment conflicts,
+concurrent preference writes and persistence across DataStore reopening before
+publishing the APK. It also enforces the 500-line source-file limit.
 
 ## Known Android limits
 

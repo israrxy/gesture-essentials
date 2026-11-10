@@ -7,7 +7,7 @@ import com.israrxy.gestureessentials.core.model.TriggerEvent
 class TriggerMatcher {
 
     fun matches(trigger: Trigger, event: TriggerEvent): Boolean = when (trigger) {
-        is Trigger.Shake -> event is TriggerEvent.Shake && event.count >= trigger.count
+        is Trigger.Shake -> event is TriggerEvent.Shake && event.count == trigger.count
 
         is Trigger.Screen -> event is TriggerEvent.Screen && event.state == trigger.state
         is Trigger.Charger -> event is TriggerEvent.Charger && event.plugged == trigger.plugged

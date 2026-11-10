@@ -1,6 +1,8 @@
 package com.israrxy.gestureessentials.data.datastore
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -14,22 +16,24 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 
-class RulesDataSource(private val context: Context) {
+class RulesDataSource(private val dataStore: DataStore<Preferences>) {
+
+    constructor(context: Context) : this(context.rulesDataStore)
 
     private val key = stringPreferencesKey(RULES_KEY)
 
-    fun observeRules(): Flow<List<Rule>> = context.rulesDataStore.data
+    fun observeRules(): Flow<List<Rule>> = dataStore.data
         .catch { emit(emptyPreferences()) }
         .map { preferences -> decode(preferences[key]) }
 
     suspend fun readRules(): List<Rule> {
-        val preferences = context.rulesDataStore.data.first()
+        val preferences = dataStore.data.first()
         return decode(preferences[key])
     }
 
     suspend fun writeRules(rules: List<Rule>) {
         val payload = JsonArray(rules.map(RuleJsonCodec::encode)).toString()
-        context.rulesDataStore.edit { preferences -> preferences[key] = payload }
+        dataStore.edit { preferences -> preferences[key] = payload }
     }
 
     private fun decode(raw: String?): List<Rule> {

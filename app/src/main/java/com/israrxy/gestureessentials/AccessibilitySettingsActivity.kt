@@ -6,7 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.israrxy.gestureessentials.ui.settings.SettingsRoute
+import com.israrxy.gestureessentials.ui.navigation.AppNavHost
 import com.israrxy.gestureessentials.ui.theme.GestureEssentialsTheme
 
 /** Preferences entry advertised to Android Settings by the accessibility service. */
@@ -22,9 +22,9 @@ class AccessibilitySettingsActivity : ComponentActivity() {
         setContent {
             val settings by graph.settingsState.collectAsStateWithLifecycle()
             GestureEssentialsTheme(settings = settings) {
-                SettingsRoute(
+                AppNavHost(
                     graph = graph,
-                    onBack = { finish() },
+                    onFinish = { finish() },
                 )
             }
         }

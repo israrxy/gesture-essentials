@@ -37,8 +37,8 @@ jobs:
       - name: Verify the 500-line rule
         run: ./scripts/check-size.sh
 
-      - name: Assemble debug APK
-        run: ./gradlew :app:assembleDebug --build-cache --configuration-cache --stacktrace
+      - name: Test rules and gestures, then assemble debug APK
+        run: ./gradlew :app:testDebugUnitTest :app:assembleDebug --build-cache --configuration-cache --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -48,6 +48,15 @@ jobs:
           if-no-files-found: error
           retention-days: 14
           compression-level: 0
+
+      - name: Upload unit test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gesture-essentials-test-results
+          path: app/build/test-results/testDebugUnitTest/*.xml
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Summary
         run: |

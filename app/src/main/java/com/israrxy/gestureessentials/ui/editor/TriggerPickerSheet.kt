@@ -35,7 +35,7 @@ fun TriggerPickerSheet(
                     subtitle = "Pick the gesture or event that starts the rule.",
                 )
             }
-            items(items = TriggerCatalog.entries, key = { entry -> entry.type.key }) { entry ->
+            items(items = TriggerCatalog.selectableEntries, key = { entry -> entry.type.key }) { entry ->
                 ListRow(
                     title = entry.label,
                     subtitle = entry.description,

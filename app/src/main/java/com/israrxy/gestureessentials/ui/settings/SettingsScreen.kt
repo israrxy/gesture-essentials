@@ -1,18 +1,16 @@
 package com.israrxy.gestureessentials.ui.settings
 
-import android.os.Build
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.FilterChip
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
@@ -20,13 +18,19 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import com.israrxy.gestureessentials.core.model.AppSettings
+import com.israrxy.gestureessentials.core.model.ShortcutPreset
+import com.israrxy.gestureessentials.domain.summary
+import com.israrxy.gestureessentials.ui.catalog.ActionCatalog
 import com.israrxy.gestureessentials.ui.components.ScreenHeader
-import com.israrxy.gestureessentials.ui.components.SectionCard
 import kotlin.math.roundToInt
 
 @Composable
@@ -34,190 +38,99 @@ fun SettingsScreen(
     state: SettingsUiState,
     onBack: () -> Unit,
     onOpenAccessibility: () -> Unit,
-    onOpenDndAccess: () -> Unit,
-    onOpenBatterySettings: () -> Unit,
+    onPresetToggle: (ShortcutPreset, Boolean) -> Unit,
+    onCustomRuleToggle: (String, Boolean) -> Unit,
+    onNewRule: () -> Unit,
+    onEditRule: (String) -> Unit,
+    onMoreSettings: () -> Unit,
     onShakeSensitivityChange: (Int) -> Unit,
     onHapticsChange: (Boolean) -> Unit,
-    onDefaultCooldownChange: (Long) -> Unit,
-    onThemeModeChange: (AppSettings.ThemeMode) -> Unit,
-    onDynamicColorChange: (Boolean) -> Unit,
+    onDismissMessage: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Scaffold(
-        modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-        ) {
-            ScreenHeader(
-                title = "Settings",
-                subtitle = "Stored on this device",
-                onBack = onBack,
-            )
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                PermissionsSection(
-                    state = state,
-                    onOpenAccessibility = onOpenAccessibility,
-                    onOpenDndAccess = onOpenDndAccess,
-                    onOpenBatterySettings = onOpenBatterySettings,
-                )
-                GesturesSection(
-                    state = state,
-                    onShakeSensitivityChange = onShakeSensitivityChange,
-                    onHapticsChange = onHapticsChange,
-                    onDefaultCooldownChange = onDefaultCooldownChange,
-                )
-                AppearanceSection(
-                    state = state,
-                    onThemeModeChange = onThemeModeChange,
-                    onDynamicColorChange = onDynamicColorChange,
-                )
-                AboutSection(versionName = state.versionName)
-                Spacer(Modifier.height(24.dp))
-            }
-        }
-    }
-}
-
-@Composable
-private fun PermissionsSection(
-    state: SettingsUiState,
-    onOpenAccessibility: () -> Unit,
-    onOpenDndAccess: () -> Unit,
-    onOpenBatterySettings: () -> Unit,
-) {
-    SectionCard(title = "Permissions") {
-        StatusRow(
-            title = "Accessibility service",
-            detail = if (state.serviceEnabled) {
-                "On — gestures are live"
-            } else {
-                "Off — no gesture can fire"
-            },
-            ok = state.serviceEnabled,
-            actionLabel = if (state.serviceEnabled) "Manage" else "Enable",
-            onAction = onOpenAccessibility,
-        )
-        HorizontalDivider()
-        StatusRow(
-            title = "Do Not Disturb access",
-            detail = if (state.dndAccess) {
-                "Granted — DND actions work"
-            } else {
-                "Not granted — DND actions do nothing"
-            },
-            ok = state.dndAccess,
-            actionLabel = if (state.dndAccess) "Manage" else "Grant",
-            onAction = onOpenDndAccess,
-        )
-        HorizontalDivider()
-        StatusRow(
-            title = "Battery optimization",
-            detail = if (state.batteryUnrestricted) {
-                "Unrestricted — the service can stay alive"
-            } else {
-                "Optimized — Android may stop the service"
-            },
-            ok = state.batteryUnrestricted,
-            actionLabel = if (state.batteryUnrestricted) "Manage" else "Fix",
-            onAction = onOpenBatterySettings,
-        )
-        Text(
-            text = "Android does not let apps grant these to themselves. Each button opens the matching system page; that page is the only place the switch exists.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
-private fun GesturesSection(
-    state: SettingsUiState,
-    onShakeSensitivityChange: (Int) -> Unit,
-    onHapticsChange: (Boolean) -> Unit,
-    onDefaultCooldownChange: (Long) -> Unit,
-) {
-    SectionCard(title = "Gestures") {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "Shake sensitivity",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.weight(1f),
-                )
-                Text(
-                    text = "${state.settings.shakeSensitivity}%",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-            Slider(
-                value = state.settings.shakeSensitivity.toFloat(),
-                onValueChange = { onShakeSensitivityChange(it.roundToInt()) },
-                valueRange = 0f..100f,
-                steps = 19,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Row {
-                Text(
-                    text = "Firm",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.weight(1f))
-                Text(
-                    text = "Light",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Text(
-                text = "Higher values trigger on lighter shakes. Applies to every shake rule.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-
-        HorizontalDivider()
-
-        ToggleRow(
-            title = "Haptic feedback",
-            subtitle = "Vibrate briefly when a rule runs",
-            checked = state.settings.hapticsEnabled,
-            onCheckedChange = onHapticsChange,
-        )
-
-        HorizontalDivider()
-
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(
-                text = "Default cooldown",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = "New rules wait this long before they can fire again. Existing rules keep their own value.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                COOLDOWN_OPTIONS.forEach { (ms, label) ->
-                    FilterChip(
-                        selected = state.settings.defaultCooldownMs == ms,
-                        onClick = { onDefaultCooldownChange(ms) },
-                        label = { Text(label) },
-                        modifier = Modifier.weight(1f),
+    Scaffold(modifier = modifier) { innerPadding ->
+        Column(Modifier.fillMaxSize().padding(innerPadding)) {
+            ScreenHeader(title = "Gesture Essentials", onBack = onBack)
+            LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
+                if (state.isLoading) {
+                    item("loading") { LinearProgressIndicator(Modifier.fillMaxWidth()) }
+                }
+                if (!state.isLoading && !state.serviceEnabled) {
+                    item("service") {
+                        PreferenceAction(
+                            title = "Enable accessibility service",
+                            subtitle = "Enable Gesture Essentials to run your shortcuts",
+                            onClick = onOpenAccessibility,
+                        )
+                    }
+                }
+                state.message?.let { message ->
+                    item("message") { SettingsMessage(message, onDismissMessage) }
+                }
+                item("presets_heading") { PreferenceHeading("Common shortcuts") }
+                items(state.presets, key = { it.preset.ruleId }) { row ->
+                    PreferenceToggle(
+                        title = row.preset.title,
+                        subtitle = row.unavailableReason ?: row.preset.description,
+                        checked = row.enabled,
+                        enabled = state.canChange && (row.enabled || row.unavailableReason == null),
+                        onCheckedChange = { onPresetToggle(row.preset, it) },
+                    )
+                }
+                item("custom_heading") {
+                    HorizontalDivider(Modifier.padding(horizontal = 20.dp))
+                    PreferenceHeading("Custom rules")
+                }
+                if (!state.isLoading && state.customRules.isEmpty()) {
+                    item("empty") {
+                        Text(
+                            "Create a gesture with your own actions.",
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                items(state.customRules, key = { it.rule.id }) { row ->
+                    CustomRulePreference(
+                        state = row,
+                        canChange = state.canChange,
+                        onEdit = { onEditRule(row.rule.id) },
+                        onToggle = { onCustomRuleToggle(row.rule.id, it) },
+                    )
+                }
+                item("new_rule") {
+                    TextButton(
+                        onClick = onNewRule,
+                        enabled = state.canChange,
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                    ) { Text("Add custom rule") }
+                }
+                item("preferences_heading") {
+                    HorizontalDivider(Modifier.padding(horizontal = 20.dp))
+                    PreferenceHeading("Preferences")
+                }
+                item("sensitivity") {
+                    ShakeSensitivityPreference(
+                        value = state.settings.shakeSensitivity,
+                        enabled = state.canChange,
+                        onChange = onShakeSensitivityChange,
+                    )
+                }
+                item("haptics") {
+                    PreferenceToggle(
+                        title = "Haptic feedback",
+                        subtitle = "A short vibration when a rule runs",
+                        checked = state.settings.hapticsEnabled,
+                        onCheckedChange = onHapticsChange,
+                        enabled = state.canChange,
+                    )
+                }
+                item("more") {
+                    PreferenceAction(
+                        title = "More settings",
+                        subtitle = "Appearance, cooldown, permissions and about",
+                        onClick = onMoreSettings,
                     )
                 }
             }
@@ -226,138 +139,69 @@ private fun GesturesSection(
 }
 
 @Composable
-private fun AppearanceSection(
-    state: SettingsUiState,
-    onThemeModeChange: (AppSettings.ThemeMode) -> Unit,
-    onDynamicColorChange: (Boolean) -> Unit,
+private fun CustomRulePreference(
+    state: CustomRuleUiState,
+    canChange: Boolean,
+    onEdit: () -> Unit,
+    onToggle: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    val dynamicSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-
-    SectionCard(title = "Appearance") {
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(
-                text = "Theme",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                AppSettings.ThemeMode.entries.forEach { mode ->
-                    FilterChip(
-                        selected = state.settings.themeMode == mode,
-                        onClick = { onThemeModeChange(mode) },
-                        label = { Text(mode.label()) },
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
-        }
-
-        HorizontalDivider()
-
-        ToggleRow(
-            title = "Dynamic color",
-            subtitle = if (dynamicSupported) {
-                "Use colors from your wallpaper"
+    val rule = state.rule
+    Row(
+        modifier = modifier.fillMaxWidth().heightIn(min = 72.dp)
+            .padding(horizontal = 20.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        PreferenceText(
+            title = rule.name,
+            subtitle = if (!rule.enabled && state.conflictName != null) {
+                "Gesture used by “${state.conflictName}”"
             } else {
-                "Needs Android 12 or newer"
+                "${rule.trigger.summary()} → ${rule.actions.joinToString(" → ", transform = ActionCatalog::summary)}"
             },
-            checked = dynamicSupported && state.settings.dynamicColor,
-            enabled = dynamicSupported,
-            onCheckedChange = onDynamicColorChange,
+            modifier = Modifier.weight(1f),
         )
-    }
-}
-
-@Composable
-private fun AboutSection(versionName: String) {
-    SectionCard(title = "About") {
-        Text(
-            text = "Gesture Essentials $versionName",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Text(
-            text = "Rules and settings stay on this device. The app has no internet permission and never reads screen content.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = "Volume keys are never intercepted — they stay system sound controls.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
-private fun StatusRow(
-    title: String,
-    detail: String,
-    ok: Boolean,
-    actionLabel: String,
-    onAction: () -> Unit,
-) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = detail,
-                style = MaterialTheme.typography.bodySmall,
-                color = if (ok) {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                } else {
-                    MaterialTheme.colorScheme.error
-                },
-            )
-        }
-        TextButton(onClick = onAction) {
-            Text(actionLabel)
-        }
-    }
-}
-
-@Composable
-private fun ToggleRow(
-    title: String,
-    subtitle: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    enabled: Boolean = true,
-) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        TextButton(onClick = onEdit) { Text("Edit") }
         Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            enabled = enabled,
+            checked = rule.enabled,
+            onCheckedChange = onToggle,
+            enabled = canChange && (rule.enabled || state.conflictName == null),
+            modifier = Modifier.semantics { contentDescription = "Enable ${rule.name}" },
         )
     }
 }
 
-private fun AppSettings.ThemeMode.label(): String = when (this) {
-    AppSettings.ThemeMode.SYSTEM -> "System"
-    AppSettings.ThemeMode.LIGHT -> "Light"
-    AppSettings.ThemeMode.DARK -> "Dark"
+@Composable
+private fun ShakeSensitivityPreference(
+    value: Int,
+    enabled: Boolean,
+    onChange: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var draft by rememberSaveable(value) { mutableFloatStateOf(value.toFloat()) }
+    val label = when {
+        draft <= 35 -> "Low"
+        draft <= 70 -> "Medium"
+        else -> "High"
+    }
+    Column(modifier = modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Shake sensitivity", Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+            Text("$label · ${draft.roundToInt()}%", style = MaterialTheme.typography.labelLarge)
+        }
+        Slider(
+            value = draft,
+            onValueChange = { draft = it },
+            onValueChangeFinished = { onChange(draft.roundToInt()) },
+            valueRange = 0f..100f,
+            steps = 19,
+            enabled = enabled,
+            modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Shake sensitivity" },
+        )
+        Text(
+            "Lower values need firmer, deliberate shakes.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
-
-private val COOLDOWN_OPTIONS = listOf(
-    500L to "0.5 s",
-    1_000L to "1 s",
-    2_000L to "2 s",
-    5_000L to "5 s",
-)

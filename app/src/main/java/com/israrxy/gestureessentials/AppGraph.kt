@@ -31,6 +31,7 @@ import com.israrxy.gestureessentials.domain.usecase.GetRuleUseCase
 import com.israrxy.gestureessentials.domain.usecase.ObserveRulesUseCase
 import com.israrxy.gestureessentials.domain.usecase.ObserveSettingsUseCase
 import com.israrxy.gestureessentials.domain.usecase.SaveRuleUseCase
+import com.israrxy.gestureessentials.domain.usecase.SetPresetEnabledUseCase
 import com.israrxy.gestureessentials.domain.usecase.SetRuleEnabledUseCase
 import com.israrxy.gestureessentials.domain.usecase.UpdateSettingsUseCase
 import com.israrxy.gestureessentials.runtime.AccessibilityServiceRef
@@ -75,6 +76,7 @@ class AppGraph(
     private val saveRule = SaveRuleUseCase(rulesRepository)
     private val deleteRule = DeleteRuleUseCase(rulesRepository)
     private val setRuleEnabled = SetRuleEnabledUseCase(rulesRepository)
+    private val setPresetEnabled = SetPresetEnabledUseCase(rulesRepository)
 
     private val observeSettings = ObserveSettingsUseCase(settingsRepository)
     private val updateSettings = UpdateSettingsUseCase(settingsRepository)
@@ -146,6 +148,7 @@ class AppGraph(
                 ruleId = ruleId,
                 getRule = getRule,
                 saveRule = saveRule,
+                deleteRule = deleteRule,
                 defaultCooldownMs = { settingsState.value.defaultCooldownMs },
             )
         }
@@ -156,7 +159,10 @@ class AppGraph(
             SettingsViewModel(
                 appInfo = appInfo,
                 observeSettings = observeSettings,
+                observeRules = observeRules,
                 updateSettings = updateSettings,
+                setPresetEnabled = setPresetEnabled,
+                setRuleEnabled = setRuleEnabled,
                 serviceStatus = serviceStatus,
                 systemAccess = systemAccess,
             )

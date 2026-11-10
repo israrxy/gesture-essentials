@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 interface RulesRepository {
     fun observeRules(): Flow<List<Rule>>
     suspend fun getRule(id: String): Rule?
-    suspend fun save(rule: Rule)
     suspend fun delete(id: String)
-    suspend fun setEnabled(id: String, enabled: Boolean)
+    /** The transform and write are serialized with all other rule mutations. */
+    suspend fun updateRules(transform: (List<Rule>) -> List<Rule>)
 }

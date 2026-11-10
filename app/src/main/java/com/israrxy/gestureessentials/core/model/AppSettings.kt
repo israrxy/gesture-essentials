@@ -8,11 +8,15 @@ data class AppSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = true,
     /** 0 = only violent shakes, 100 = very light shakes. */
-    val shakeSensitivity: Int = 55,
+    val shakeSensitivity: Int = DEFAULT_SHAKE_SENSITIVITY,
     val hapticsEnabled: Boolean = true,
     /** Cooldown applied to newly created rules. */
     val defaultCooldownMs: Long = 1_000L,
 ) {
+    companion object {
+        const val DEFAULT_SHAKE_SENSITIVITY = 25
+    }
+
     enum class ThemeMode(val key: String) {
         SYSTEM("system"),
         LIGHT("light"),

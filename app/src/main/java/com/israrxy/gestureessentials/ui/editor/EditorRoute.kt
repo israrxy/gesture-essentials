@@ -27,8 +27,10 @@ fun EditorRoute(
         onBack = onBack,
         onNameChange = viewModel::onNameChange,
         onTriggerChange = viewModel::onTriggerChange,
+        onEnabledChange = viewModel::onEnabledChange,
         onAddAction = viewModel::onAddAction,
         onRemoveAction = viewModel::onRemoveAction,
         onSave = viewModel::onSave,
+        onDelete = viewModel::onDelete,
     )
 }

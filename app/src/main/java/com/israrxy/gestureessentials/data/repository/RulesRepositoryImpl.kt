@@ -20,21 +20,13 @@ class RulesRepositoryImpl(
     override suspend fun getRule(id: String): Rule? =
         dataSource.readRules().firstOrNull { it.id == id }
 
-    override suspend fun save(rule: Rule) = mutate { rules ->
-        rules.filterNot { it.id == rule.id } + rule
-    }
-
-    override suspend fun delete(id: String) = mutate { rules ->
+    override suspend fun delete(id: String) = updateRules { rules ->
         rules.filterNot { it.id == id }
     }
 
-    override suspend fun setEnabled(id: String, enabled: Boolean) = mutate { rules ->
-        rules.map { if (it.id == id) it.copy(enabled = enabled) else it }
-    }
-
     /** Read-modify-write is serialised so concurrent toggles cannot drop edits. */
-    private suspend fun mutate(block: (List<Rule>) -> List<Rule>) = mutex.withLock {
-        val updated = block(dataSource.readRules())
+    override suspend fun updateRules(transform: (List<Rule>) -> List<Rule>) = mutex.withLock {
+        val updated = transform(dataSource.readRules())
         dataSource.writeRules(updated)
     }
 }
