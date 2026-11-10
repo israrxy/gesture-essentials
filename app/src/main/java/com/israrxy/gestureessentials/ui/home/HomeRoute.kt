@@ -17,6 +17,7 @@ import com.israrxy.gestureessentials.AppGraph
 fun HomeRoute(
     graph: AppGraph,
     onOpenRules: () -> Unit,
+    onOpenSettings: () -> Unit,
 ) {
     val viewModel: HomeViewModel = viewModel(factory = graph.homeViewModelFactory)
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -34,6 +35,7 @@ fun HomeRoute(
 
     HomeScreen(
         state = state,
+        onOpenSettings = onOpenSettings,
         onAction = { action ->
             when (action) {
                 HomeAction.OpenRules -> onOpenRules()

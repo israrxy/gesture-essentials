@@ -1,8 +1,8 @@
 # Gesture Essentials
 
-Android shortcuts and actions triggered by gestures — shake, volume keys, letter
-drawing, screen events, charging, and more. Everything runs on-device; the app
-requests **no internet permission**.
+Android shortcuts and actions triggered by gestures — shake, letter drawing,
+screen events, charging, and more. Everything runs on-device; the app requests
+**no internet permission**.
 
 ## Build
 
@@ -39,6 +39,7 @@ debug keystore checked into `keystore/`).
 | M0 | Project skeleton, theme, CI pipeline, artifact install | ✅ |
 | M1 | Rule model, persistence, rules list/editor | ✅ |
 | M2 | Accessibility service, trigger bus, rule engine, core actions | ✅ |
+| M2.5 | In-app Settings: theme, shake sensitivity, haptics, cooldowns, permission status | ✅ |
 | M3 | Gesture pad + letter recognition | ⏳ |
 | M4 | Full action library, conditions, logs, polish | ⏳ |
 
@@ -60,6 +61,21 @@ to work.
 Branches: `main` holds the last verified, installable build. `dev` is where the
 next milestone is built. Both are fast-forwarded together once a build passes
 and is installed.
+
+## Settings
+
+Everything configurable lives in the in-app Settings screen (gear on Home):
+
+- Theme (system/light/dark) and dynamic color
+- Shake sensitivity, applied live to every shake rule
+- Haptic tick when a rule runs
+- Default cooldown for newly created rules
+- Live status for the accessibility service, DND access and battery
+  optimization, with a button that opens the matching system page
+
+Android does not allow an app to enable its own accessibility service or grant
+itself DND/battery exemptions. Those rows are honest deep links, not fake
+toggles.
 
 ## Known Android limits
 

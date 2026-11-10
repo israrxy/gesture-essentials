@@ -7,7 +7,7 @@ package com.israrxy.gestureessentials.core.model
 sealed interface Trigger {
     val type: TriggerType
 
-    data class Shake(val count: Int = 2, val sensitivity: Int = 55) : Trigger {
+    data class Shake(val count: Int = 2) : Trigger {
         override val type = TriggerType.SHAKE
     }
 

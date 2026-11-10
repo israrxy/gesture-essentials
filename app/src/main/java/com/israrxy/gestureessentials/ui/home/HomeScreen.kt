@@ -10,11 +10,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -27,6 +32,7 @@ import com.israrxy.gestureessentials.ui.theme.GestureEssentialsTheme
 @Composable
 fun HomeScreen(
     state: HomeUiState,
+    onOpenSettings: () -> Unit,
     onAction: (HomeAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -43,7 +49,7 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Spacer(Modifier.height(16.dp))
-            HomeHeader()
+            HomeHeader(onOpenSettings = onOpenSettings)
             StatusCard(
                 enabled = state.serviceEnabled,
                 onEnable = { onAction(HomeAction.EnableService) },
@@ -72,19 +78,28 @@ fun HomeScreen(
 }
 
 @Composable
-private fun HomeHeader() {
-    Column {
-        Text(
-            text = "Gesture\nEssentials",
-            style = MaterialTheme.typography.displaySmall,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-        Text(
-            text = "One gesture. The right action. Every time.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 8.dp),
-        )
+private fun HomeHeader(onOpenSettings: () -> Unit) {
+    Row(verticalAlignment = Alignment.Top) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "Gesture\nEssentials",
+                style = MaterialTheme.typography.displaySmall,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Text(
+                text = "One gesture. The right action. Every time.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
+        IconButton(onClick = onOpenSettings) {
+            Icon(
+                imageVector = Icons.Default.Settings,
+                contentDescription = "Settings",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
@@ -123,6 +138,7 @@ private fun HomeScreenPreview() {
     GestureEssentialsTheme(dynamicColor = false) {
         HomeScreen(
             state = HomeUiState(versionName = "0.1.0", ruleCount = 2, activeRuleCount = 1),
+            onOpenSettings = {},
             onAction = {},
         )
     }

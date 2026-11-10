@@ -18,14 +18,12 @@ import kotlin.math.sqrt
 class ShakeDetector(
     context: Context,
     private val emit: (TriggerEvent) -> Unit,
-    sensitivity: Int = 55,
+    /** Read on every sensor event so a Settings change applies immediately. */
+    private val sensitivityProvider: () -> Int = { 55 },
 ) : SensorEventListener {
 
     private val sensorManager = context.getSystemService(SensorManager::class.java)
     private val accelerometer = sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-
-    /** 0 = only violent shakes, 100 = very light shakes. */
-    private val threshold = 4.2f - (sensitivity.coerceIn(0, 100) / 100f) * 3.0f
 
     private val peaks = ArrayDeque<Long>()
     private var gravity = 9.81f
@@ -47,6 +45,9 @@ class ShakeDetector(
 
         // Low-pass gravity estimate; the difference is the linear acceleration.
         gravity = gravity * 0.8f + magnitude * 0.2f
+
+        // 0 = only violent shakes, 100 = very light shakes.
+        val threshold = 4.2f - (sensitivityProvider().coerceIn(0, 100) / 100f) * 3.0f
         if (abs(magnitude - gravity) < threshold) return
 
         val now = SystemClock.elapsedRealtime()

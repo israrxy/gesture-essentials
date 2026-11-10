@@ -20,6 +20,8 @@ class EditorViewModel(
     private val ruleId: String?,
     private val getRule: GetRuleUseCase,
     private val saveRule: SaveRuleUseCase,
+    /** Global preference; existing rules keep their saved value. */
+    private val defaultCooldownMs: () -> Long = { 1_000L },
 ) : ViewModel() {
 
     /** Fields the editor must preserve but does not edit yet (M4). */
@@ -73,7 +75,7 @@ class EditorViewModel(
             actions = state.actions,
             enabled = existing?.enabled ?: true,
             constraints = existing?.constraints ?: Constraints(),
-            cooldownMs = existing?.cooldownMs ?: 1_000L,
+            cooldownMs = existing?.cooldownMs ?: defaultCooldownMs(),
             createdAt = existing?.createdAt ?: System.currentTimeMillis(),
         )
 

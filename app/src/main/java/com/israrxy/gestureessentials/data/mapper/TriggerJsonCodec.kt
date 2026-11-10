@@ -11,10 +11,7 @@ internal object TriggerJsonCodec {
     fun encode(trigger: Trigger): JsonObject = buildJsonObject {
         put("type", trigger.type.key)
         when (trigger) {
-            is Trigger.Shake -> {
-                put("count", trigger.count)
-                put("sensitivity", trigger.sensitivity)
-            }
+            is Trigger.Shake -> put("count", trigger.count)
 
             is Trigger.Screen -> put("state", trigger.state.key)
             is Trigger.Charger -> put("plugged", trigger.plugged)
@@ -34,10 +31,7 @@ internal object TriggerJsonCodec {
     fun decode(obj: JsonObject): Trigger? {
         val type = obj.string("type") ?: return null
         return when (type) {
-            TriggerType.SHAKE.key -> Trigger.Shake(
-                count = obj.int("count", 2),
-                sensitivity = obj.int("sensitivity", 55),
-            )
+            TriggerType.SHAKE.key -> Trigger.Shake(count = obj.int("count", 2))
 
             TriggerType.FACE_DOWN.key -> Trigger.FaceDown
             TriggerType.SCREEN_STATE.key -> Trigger.Screen(Trigger.ScreenEvent.fromKey(obj.string("state")))

@@ -11,6 +11,7 @@ import com.israrxy.gestureessentials.AppGraph
 import com.israrxy.gestureessentials.ui.editor.EditorRoute
 import com.israrxy.gestureessentials.ui.home.HomeRoute
 import com.israrxy.gestureessentials.ui.rules.RulesRoute
+import com.israrxy.gestureessentials.ui.settings.SettingsRoute
 
 @Composable
 fun AppNavHost(
@@ -28,6 +29,14 @@ fun AppNavHost(
             HomeRoute(
                 graph = graph,
                 onOpenRules = { navController.navigate(Routes.RULES) },
+                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+            )
+        }
+
+        composable(Routes.SETTINGS) {
+            SettingsRoute(
+                graph = graph,
+                onBack = { navController.popBackStack() },
             )
         }
 

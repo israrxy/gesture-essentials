@@ -18,8 +18,11 @@ import com.israrxy.gestureessentials.runtime.sensor.ShakeDetector
  */
 class GestureAccessibilityService : AccessibilityService() {
 
+    private val graph
+        get() = (application as GestureEssentialsApp).graph
+
     private val triggerBus
-        get() = (application as GestureEssentialsApp).graph.triggerBus
+        get() = graph.triggerBus
 
     private var shakeDetector: ShakeDetector? = null
     private var screenDetector: ScreenToggleDetector? = null
@@ -31,7 +34,11 @@ class GestureAccessibilityService : AccessibilityService() {
         if (receiver != null) return
 
         screenDetector = ScreenToggleDetector(triggerBus::emit)
-        shakeDetector = ShakeDetector(this, emit = triggerBus::emit).also { it.start() }
+        shakeDetector = ShakeDetector(
+            this,
+            emit = triggerBus::emit,
+            sensitivityProvider = { graph.settingsState.value.shakeSensitivity },
+        ).also { it.start() }
         registerSystemReceiver()
     }
 

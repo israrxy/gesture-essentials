@@ -2,6 +2,7 @@ package com.israrxy.gestureessentials.runtime.engine
 
 import android.os.SystemClock
 import com.israrxy.gestureessentials.action.ActionExecutor
+import com.israrxy.gestureessentials.action.Haptics
 import com.israrxy.gestureessentials.core.model.Rule
 import com.israrxy.gestureessentials.core.model.TriggerEvent
 import com.israrxy.gestureessentials.domain.usecase.ObserveRulesUseCase
@@ -19,6 +20,8 @@ class RuleEngine(
     private val actionExecutor: ActionExecutor,
     private val constraints: ConstraintEvaluator,
     private val scope: CoroutineScope,
+    private val haptics: Haptics,
+    private val hapticsEnabled: () -> Boolean,
     private val matcher: TriggerMatcher = TriggerMatcher(),
 ) {
 
@@ -44,7 +47,13 @@ class RuleEngine(
 
     private fun handle(event: TriggerEvent) {
         val now = SystemClock.elapsedRealtime()
-        rules.filter { rule -> canRun(rule, event, now) }.forEach { rule ->
+        val due = rules.filter { rule -> canRun(rule, event, now) }
+        if (due.isEmpty()) return
+
+        // One tick per event, not per rule, so overlapping rules do not buzz twice.
+        if (hapticsEnabled()) haptics.tap()
+
+        due.forEach { rule ->
             lastRunAt[rule.id] = now
             scope.launch { runCatching { actionExecutor.execute(rule.actions) } }
         }
