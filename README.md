@@ -37,7 +37,7 @@ debug keystore checked into `keystore/`).
 | Milestone | Scope | State |
 |---|---|---|
 | M0 | Project skeleton, theme, CI pipeline, artifact install | ✅ |
-| M1 | Rule model, persistence, rules list/editor | ⏳ |
+| M1 | Rule model, persistence, rules list/editor | ✅ |
 | M2 | Accessibility service, trigger bus, rule engine, core actions | ⏳ |
 | M3 | Gesture pad + letter recognition | ⏳ |
 | M4 | Full action library, conditions, logs, polish | ⏳ |
