@@ -46,6 +46,7 @@ fun HomeScreen(
             HomeHeader()
             StatusCard(
                 enabled = state.serviceEnabled,
+                onEnable = { onAction(HomeAction.EnableService) },
                 modifier = Modifier.fillMaxWidth(),
             )
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {

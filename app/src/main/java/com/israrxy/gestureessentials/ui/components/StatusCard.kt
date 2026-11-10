@@ -5,9 +5,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,11 +27,12 @@ import androidx.compose.ui.unit.dp
 fun StatusCard(
     enabled: Boolean,
     modifier: Modifier = Modifier,
+    onEnable: (() -> Unit)? = null,
     title: String = if (enabled) "Gesture service is running" else "Gesture service is off",
     subtitle: String = if (enabled) {
         "Listening for your gestures in the background."
     } else {
-        "The background listener ships in the next build."
+        "Turn it on in Accessibility settings so your rules can run."
     },
 ) {
     SectionCard(modifier = modifier) {
@@ -60,6 +63,15 @@ fun StatusCard(
                 )
             }
             StatePill(enabled = enabled)
+        }
+
+        if (!enabled && onEnable != null) {
+            Button(
+                onClick = onEnable,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Enable in Accessibility settings")
+            }
         }
     }
 }
