@@ -38,9 +38,25 @@ debug keystore checked into `keystore/`).
 |---|---|---|
 | M0 | Project skeleton, theme, CI pipeline, artifact install | ✅ |
 | M1 | Rule model, persistence, rules list/editor | ✅ |
-| M2 | Accessibility service, trigger bus, rule engine, core actions | ⏳ |
+| M2 | Accessibility service, trigger bus, rule engine, core actions | ✅ |
 | M3 | Gesture pad + letter recognition | ⏳ |
 | M4 | Full action library, conditions, logs, polish | ⏳ |
+
+### Runtime coverage
+
+Working triggers: shake, volume keys (short and long press), screen on/off/unlock,
+power double-press heuristic, charger, headset, app foreground, manual.
+
+Working actions: flashlight, media play/pause-next-previous, lock screen,
+screenshot (Android 11+), vibrate, Do Not Disturb, open URL, speak, wait.
+
+Not wired yet: face-down, Wi-Fi network changes and drawn letters. Rules using
+those triggers are saved but stay inert; they land in M3 rather than pretending
+to work.
+
+Branches: `main` holds the last verified, installable build. `dev` is where the
+next milestone is built. Both are fast-forwarded together once a build passes
+and is installed.
 
 ## Known Android limits
 
