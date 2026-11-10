@@ -4,11 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.runtime.getValue
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.israrxy.gestureessentials.ui.home.HomeScreen
-import com.israrxy.gestureessentials.ui.home.HomeViewModel
+import com.israrxy.gestureessentials.ui.navigation.AppNavHost
 import com.israrxy.gestureessentials.ui.theme.GestureEssentialsTheme
 
 class MainActivity : ComponentActivity() {
@@ -21,9 +17,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             GestureEssentialsTheme {
-                val homeViewModel: HomeViewModel = viewModel(factory = graph.homeViewModelFactory)
-                val state by homeViewModel.uiState.collectAsStateWithLifecycle()
-                HomeScreen(state = state, onAction = homeViewModel::onAction)
+                AppNavHost(graph = graph)
             }
         }
     }

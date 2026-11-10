@@ -5,7 +5,7 @@ data class HomeUiState(
     val versionName: String = "",
     val serviceEnabled: Boolean = false,
     val ruleCount: Int = 0,
-    val actionsRunToday: Int = 0,
+    val activeRuleCount: Int = 0,
 )
 
 /** One-shot user intents. The screen never mutates state directly. */

@@ -16,7 +16,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -56,12 +55,15 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f),
                 )
                 StatTile(
-                    value = state.actionsRunToday.toString(),
-                    label = "Actions run",
+                    value = state.activeRuleCount.toString(),
+                    label = "Active",
                     modifier = Modifier.weight(1f),
                 )
             }
-            RulesPreview(count = state.ruleCount, onOpen = { onAction(HomeAction.OpenRules) })
+            RulesPreview(
+                count = state.ruleCount,
+                onOpen = { onAction(HomeAction.OpenRules) },
+            )
             BuildInfo(versionName = state.versionName)
             Spacer(Modifier.height(24.dp))
         }
@@ -88,20 +90,17 @@ private fun HomeHeader() {
 @Composable
 private fun RulesPreview(count: Int, onOpen: () -> Unit) {
     SectionCard(title = "Rules") {
-        if (count == 0) {
-            Text(
-                text = "No rules yet. Rule building arrives in the next build.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
         Text(
-            text = "Shake, volume keys, letter drawing and more — all local, no network.",
-            style = MaterialTheme.typography.labelMedium,
+            text = if (count == 0) {
+                "No rules yet. Build one from a gesture, a screen event or a letter."
+            } else {
+                "$count rule${if (count == 1) "" else "s"} saved on this device."
+            },
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         TextButton(onClick = onOpen) {
-            Text(text = "What's coming")
+            Text(if (count == 0) "Create your first rule" else "View all rules")
         }
     }
 }
@@ -121,6 +120,9 @@ private fun BuildInfo(versionName: String) {
 @Composable
 private fun HomeScreenPreview() {
     GestureEssentialsTheme(dynamicColor = false) {
-        HomeScreen(state = HomeUiState(versionName = "0.1.0"), onAction = {})
+        HomeScreen(
+            state = HomeUiState(versionName = "0.1.0", ruleCount = 2, activeRuleCount = 1),
+            onAction = {},
+        )
     }
 }
