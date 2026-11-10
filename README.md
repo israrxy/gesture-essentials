@@ -64,7 +64,9 @@ and is installed.
 
 ## Settings
 
-Everything configurable lives in the in-app Settings screen (gear on Home):
+Open preferences from **Android Settings → Accessibility → Gesture Essentials →
+Settings**, or use the gear on Home. Android's service page links directly to
+the same saved preferences through the service's `android:settingsActivity`:
 
 - Theme (system/light/dark) and dynamic color
 - Shake sensitivity, applied live to every shake rule
@@ -72,6 +74,11 @@ Everything configurable lives in the in-app Settings screen (gear on Home):
 - Default cooldown for newly created rules
 - Live status for the accessibility service, DND access and battery
   optimization, with a button that opens the matching system page
+
+The system's Settings entry opens a dedicated preferences activity. Back returns
+to the caller, and it works even when the accessibility service is disabled.
+Android controls the service page itself; custom preferences are shown in the
+app's settings activity.
 
 Android does not allow an app to enable its own accessibility service or grant
 itself DND/battery exemptions. Those rows are honest deep links, not fake

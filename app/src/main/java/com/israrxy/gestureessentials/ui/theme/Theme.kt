@@ -7,6 +7,26 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import com.israrxy.gestureessentials.core.model.AppSettings
+
+/** Both the launcher and Android Settings entry use the saved appearance. */
+@Composable
+fun GestureEssentialsTheme(
+    settings: AppSettings,
+    content: @Composable () -> Unit,
+) {
+    val darkTheme = when (settings.themeMode) {
+        AppSettings.ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        AppSettings.ThemeMode.LIGHT -> false
+        AppSettings.ThemeMode.DARK -> true
+    }
+
+    GestureEssentialsTheme(
+        darkTheme = darkTheme,
+        dynamicColor = settings.dynamicColor,
+        content = content,
+    )
+}
 
 @Composable
 fun GestureEssentialsTheme(

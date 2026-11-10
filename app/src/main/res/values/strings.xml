@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">Gesture Essentials</string>
+    <string name="accessibility_settings_title">Gesture Essentials settings</string>
     <string name="accessibility_service_description">Lets your rules react to shakes, screen changes and app switches. It never reads screen content and never intercepts volume keys.</string>
 </resources>

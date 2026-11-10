@@ -25,6 +25,14 @@
             </intent-filter>
         </activity>
 
+        <!-- Android's Accessibility service page opens this preferences entry. -->
+        <activity
+            android:name=".AccessibilitySettingsActivity"
+            android:exported="true"
+            android:label="@string/accessibility_settings_title"
+            android:taskAffinity=""
+            android:windowSoftInputMode="adjustResize" />
+
         <service
             android:name=".runtime.GestureAccessibilityService"
             android:exported="true"
