@@ -1,6 +1,7 @@
 package com.israrxy.gestureessentials.runtime.keys
 
 import android.os.SystemClock
+import android.util.Log
 import android.view.KeyEvent
 import com.israrxy.gestureessentials.core.model.Trigger
 import com.israrxy.gestureessentials.core.model.TriggerEvent
@@ -21,6 +22,8 @@ class KeyPatternDetector(
     private val presses = mutableMapOf<Trigger.Direction, ArrayDeque<Long>>()
 
     fun onKeyEvent(event: KeyEvent) {
+        Log.d(TAG, "key action=${event.action} code=${event.keyCode} repeat=${event.repeatCount}")
+
         val direction = when (event.keyCode) {
             KeyEvent.KEYCODE_VOLUME_UP -> Trigger.Direction.UP
             KeyEvent.KEYCODE_VOLUME_DOWN -> Trigger.Direction.DOWN
@@ -43,6 +46,7 @@ class KeyPatternDetector(
                 val now = SystemClock.elapsedRealtime()
 
                 if (heldLong || now - startedAt >= LONG_PRESS_MS) {
+                    Log.d(TAG, "long press ${direction.key} held=$heldLong duration=${now - startedAt}")
                     emit(TriggerEvent.VolumeKey(direction, presses = 1, longPress = true))
                     return
                 }
@@ -58,6 +62,7 @@ class KeyPatternDetector(
     }
 
     private companion object {
+        const val TAG = "GE-keys"
         const val WINDOW_MS = 800L
         const val LONG_PRESS_MS = 600L
     }

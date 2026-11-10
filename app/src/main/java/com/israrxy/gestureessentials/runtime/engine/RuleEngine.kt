@@ -1,6 +1,7 @@
 package com.israrxy.gestureessentials.runtime.engine
 
 import android.os.SystemClock
+import android.util.Log
 import com.israrxy.gestureessentials.action.ActionExecutor
 import com.israrxy.gestureessentials.core.model.Rule
 import com.israrxy.gestureessentials.core.model.TriggerEvent
@@ -43,8 +44,10 @@ class RuleEngine(
     }
 
     private fun handle(event: TriggerEvent) {
+        Log.d(TAG, "event=$event")
         val now = SystemClock.elapsedRealtime()
         rules.filter { rule -> canRun(rule, event, now) }.forEach { rule ->
+            Log.d(TAG, "run '${rule.name}'")
             lastRunAt[rule.id] = now
             scope.launch { runCatching { actionExecutor.execute(rule.actions) } }
         }
@@ -57,5 +60,9 @@ class RuleEngine(
 
         val previous = lastRunAt[rule.id] ?: return true
         return now - previous >= rule.cooldownMs
+    }
+
+    private companion object {
+        const val TAG = "GE-engine"
     }
 }
