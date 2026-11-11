@@ -14,23 +14,31 @@ class ShakeSequenceTest {
     private val sequence = ShakeSequence { counts += it }
 
     @Test
-    fun doubleShakeWaitsForQuietAndFiresOnce() {
+    fun doubleShakeDispatches300msAfterTheLastPeak() {
         sequence.onPeak(0)
         sequence.onPeak(200)
-        sequence.finishIfQuiet(649)
+        assertFalse(sequence.finishIfQuiet(499))
         assertTrue(counts.isEmpty())
-        sequence.finishIfQuiet(650)
+        assertTrue(sequence.finishIfQuiet(500))
         sequence.finishIfQuiet(2_000)
         assertEquals(listOf(2), counts)
     }
 
     @Test
-    fun tripleShakeNeverRunsTheDoubleShakeAction() {
+    fun aSlowSecondShakeStillJoinsTheFirst() {
         sequence.onPeak(0)
-        sequence.onPeak(200)
-        sequence.onPeak(400)
+        // 500 ms is a normal pause for a deliberate second shake.
+        assertTrue(sequence.onPeak(500))
         assertTrue(counts.isEmpty())
-        sequence.finishIfQuiet(850)
+        assertTrue(sequence.finishIfQuiet(800))
+        assertEquals(listOf(2), counts)
+    }
+
+    @Test
+    fun tripleShakeNeverRunsTheDoubleShakeAction() {
+        listOf(0L, 200L, 400L).forEach { sequence.onPeak(it) }
+        assertTrue(counts.isEmpty())
+        sequence.finishIfQuiet(700)
         val event = TriggerEvent.Shake(counts.single())
         val matcher = TriggerMatcher()
         assertEquals(3, event.count)
@@ -47,14 +55,14 @@ class ShakeSequenceTest {
         assertFalse(sequence.onPeak(179))
         assertTrue(sequence.onPeak(200))
         assertFalse(sequence.onPeak(250))
-        sequence.finishIfQuiet(650)
+        sequence.finishIfQuiet(500)
         assertEquals(listOf(2), counts)
     }
 
     @Test
     fun anOverCountedBurstRunsTheClosestShortcut() {
         listOf(0L, 200L, 400L, 600L).forEach { sequence.onPeak(it) }
-        sequence.finishIfQuiet(1_050)
+        sequence.finishIfQuiet(900)
         val event = TriggerEvent.Shake(counts.single())
         val matcher = TriggerMatcher()
         assertFalse(matcher.matches(Trigger.Shake(5), event))
@@ -62,9 +70,10 @@ class ShakeSequenceTest {
     }
 
     @Test
-    fun aSingleShakeMatchesNothing() {
+    fun aSingleShakeWaitsLongerAndMatchesNothing() {
         sequence.onPeak(0)
-        sequence.finishIfQuiet(450)
+        assertFalse(sequence.finishIfQuiet(649))
+        sequence.finishIfQuiet(650)
         val event = TriggerEvent.Shake(counts.single())
         val matcher = TriggerMatcher()
         assertEquals(1, event.count)
@@ -79,7 +88,7 @@ class ShakeSequenceTest {
         // A new sensor event arrives before the overdue completion callback.
         sequence.onPeak(1_000)
         sequence.onPeak(1_200)
-        sequence.finishIfQuiet(1_650)
+        sequence.finishIfQuiet(1_500)
         assertEquals(listOf(2, 2), counts)
     }
 

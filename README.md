@@ -83,12 +83,13 @@ Custom rules can also be saved disabled. Multiple actions can be placed in one
 custom rule. Existing custom rules and explicitly saved sensitivity values are
 preserved.
 
-A shake burst is dispatched after **450 ms of quiet**. A burst of N shakes
-satisfies rules asking for N or fewer, so the engine runs only the closest
-match: a triple shake never also runs the double-shake shortcut, and an
-over-counted double shake still runs the double-shake shortcut when that is the
-closest rule. The flashlight handler tracks changes from Android Quick Settings
-as well as its own actions.
+A shake burst is dispatched **300 ms after the last peak** once two or more
+shakes are seen; a lone first shake keeps a 650 ms window so a slower second
+shake still joins the same burst. A burst of N shakes satisfies rules asking for
+N or fewer, so the engine runs only the closest match: a triple shake never also
+runs the double-shake shortcut, and an over-counted double shake still runs the
+double-shake shortcut when that is the closest rule. The flashlight handler
+tracks changes from Android Quick Settings as well as its own actions.
 
 The system's Settings entry opens a dedicated preferences activity. Back returns
 to the caller, and it works even when the accessibility service is disabled.

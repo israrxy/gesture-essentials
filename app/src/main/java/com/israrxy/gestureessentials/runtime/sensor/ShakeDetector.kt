@@ -29,7 +29,14 @@ class ShakeDetector(
 
     private val handler = Handler(Looper.getMainLooper())
     private val sequence = ShakeSequence { count -> emit(TriggerEvent.Shake(count)) }
-    private val finishSequence = Runnable { sequence.finishIfQuiet(SystemClock.elapsedRealtime()) }
+    private val finishSequence = object : Runnable {
+        override fun run() {
+            if (!sequence.finishIfQuiet(SystemClock.elapsedRealtime())) {
+                // A handler may wake a hair early; never drop a completed burst.
+                handler.postDelayed(this, 40L)
+            }
+        }
+    }
     private var gravity: Float? = null
     private var lastSensitivity = sensitivityProvider()
 
@@ -71,8 +78,9 @@ class ShakeDetector(
             lastSensitivity = sensitivity
             armed = true
         }
-        // Lower sensitivity requires firmer, deliberate movement.
-        val threshold = 4.2f - (sensitivity / 100f) * 3.0f
+        // Lower sensitivity requires firmer movement, but stays usable at the
+        // 25% default: ordinary deliberate shakes clear about 3 m/s².
+        val threshold = 3.6f - (sensitivity / 100f) * 2.4f
         val deviation = abs(magnitude - estimate)
         if (deviation < threshold * REARM_FRACTION) armed = true
         if (!armed || deviation < threshold) return
@@ -81,7 +89,7 @@ class ShakeDetector(
         val now = SystemClock.elapsedRealtime()
         if (sequence.onPeak(now)) {
             handler.removeCallbacks(finishSequence)
-            handler.postDelayed(finishSequence, ShakeSequence.QUIET_MS)
+            handler.postDelayed(finishSequence, sequence.quietWindow())
         }
     }
 
@@ -89,6 +97,6 @@ class ShakeDetector(
 
     private companion object {
         /** Below this fraction of the trigger level the sensor counts as settled. */
-        const val REARM_FRACTION = 0.4f
+        const val REARM_FRACTION = 0.5f
     }
 }
