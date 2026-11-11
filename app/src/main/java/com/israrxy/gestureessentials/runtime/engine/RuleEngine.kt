@@ -4,6 +4,7 @@ import android.os.SystemClock
 import com.israrxy.gestureessentials.action.ActionExecutor
 import com.israrxy.gestureessentials.action.Haptics
 import com.israrxy.gestureessentials.core.model.Rule
+import com.israrxy.gestureessentials.core.model.Trigger
 import com.israrxy.gestureessentials.core.model.TriggerEvent
 import com.israrxy.gestureessentials.domain.usecase.ObserveRulesUseCase
 import com.israrxy.gestureessentials.runtime.bus.TriggerBus
