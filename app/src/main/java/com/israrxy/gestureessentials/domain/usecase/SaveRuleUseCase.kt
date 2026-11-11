@@ -6,6 +6,6 @@ import com.israrxy.gestureessentials.domain.repository.RulesRepository
 
 class SaveRuleUseCase(private val repository: RulesRepository) {
     suspend operator fun invoke(rule: Rule) = repository.updateRules { rules ->
-        RuleAssignments.save(rules, rule)
+        RuleAssignments.save(rules, rule).rules
     }
 }

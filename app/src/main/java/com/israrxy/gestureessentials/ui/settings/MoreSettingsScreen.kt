@@ -39,7 +39,7 @@ fun MoreSettingsScreen(
         Column(Modifier.fillMaxSize().padding(innerPadding)) {
             ScreenHeader(title = "More settings", onBack = onBack)
             Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
-                state.message?.let { SettingsMessage(it, onDismissMessage) }
+                state.message?.let { SettingsMessage(it, state.messageIsError, onDismissMessage) }
                 PreferenceHeading("Appearance")
                 Text("Theme", Modifier.padding(horizontal = 20.dp), style = MaterialTheme.typography.bodyLarge)
                 FlowRow(

@@ -7,7 +7,6 @@ import com.israrxy.gestureessentials.core.model.Constraints
 import com.israrxy.gestureessentials.core.model.Rule
 import com.israrxy.gestureessentials.core.model.Trigger
 import com.israrxy.gestureessentials.domain.summary
-import com.israrxy.gestureessentials.domain.RuleConflictException
 import com.israrxy.gestureessentials.domain.usecase.DeleteRuleUseCase
 import com.israrxy.gestureessentials.domain.usecase.GetRuleUseCase
 import com.israrxy.gestureessentials.domain.usecase.SaveRuleUseCase
@@ -114,8 +113,7 @@ class EditorViewModel(
                 _uiState.update {
                     it.copy(
                         isSaving = false,
-                        error = if (error is RuleConflictException) error.message
-                        else "Couldn't save the change. Please try again.",
+                        error = "Couldn't save the change. Please try again.",
                     )
                 }
             }

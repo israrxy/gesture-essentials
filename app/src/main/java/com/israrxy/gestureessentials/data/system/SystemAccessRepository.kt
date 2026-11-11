@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorManager
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager
 import android.os.Build
 import android.os.PowerManager
 
@@ -18,8 +20,18 @@ class SystemAccessRepository(private val context: Context) {
         context.getSystemService(SensorManager::class.java)
             ?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null
 
-    fun hasFlashlight(): Boolean =
+    /**
+     * Uses the same camera check as [com.israrxy.gestureessentials.action.handlers.TorchHandler],
+     * so a disabled row always means the torch action would really fail.
+     */
+    fun hasFlashlight(): Boolean = runCatching {
+        val manager = context.getSystemService(CameraManager::class.java) ?: return@runCatching false
+        manager.cameraIdList.any { id ->
+            manager.getCameraCharacteristics(id).get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
+        }
+    }.getOrElse {
         context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH)
+    }
 
     fun supportsScreenshot(): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
 

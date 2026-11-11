@@ -12,6 +12,7 @@ data class SettingsUiState(
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
     val message: String? = null,
+    val messageIsError: Boolean = false,
     val serviceEnabled: Boolean = false,
     val dndAccess: Boolean = false,
     val batteryUnrestricted: Boolean = false,
@@ -23,10 +24,12 @@ data class SettingsUiState(
 data class PresetUiState(
     val preset: ShortcutPreset,
     val enabled: Boolean,
+    /** Hardware only: a missing sensor, torch or Android version. */
     val unavailableReason: String? = null,
 )
 
 data class CustomRuleUiState(
     val rule: Rule,
-    val conflictName: String? = null,
+    /** Another enabled rule currently owns this gesture. */
+    val ownerName: String? = null,
 )

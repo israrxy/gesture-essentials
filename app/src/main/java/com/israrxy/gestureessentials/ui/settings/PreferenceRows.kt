@@ -85,9 +85,18 @@ internal fun PreferenceText(title: String, subtitle: String, modifier: Modifier 
 }
 
 @Composable
-internal fun SettingsMessage(message: String, onDismiss: () -> Unit, modifier: Modifier = Modifier) {
+internal fun SettingsMessage(
+    message: String,
+    isError: Boolean,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(modifier = modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
-        Text(message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+        Text(
+            text = message,
+            color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodyMedium,
+        )
         TextButton(onClick = onDismiss) { Text("Dismiss") }
     }
 }

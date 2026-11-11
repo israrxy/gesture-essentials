@@ -77,14 +77,18 @@ The page is a compact preference list:
 4. **More settings** — theme, wallpaper colors, default cooldown, system access
    status and About.
 
-Presets use stable rule IDs. Enabling an already-assigned gesture is blocked with
-the conflicting rule's name; turn that assignment off first. Custom rules can
-also be saved disabled. Multiple actions can be placed in one custom rule.
-Existing custom rules and explicitly saved sensitivity values are preserved.
+Presets use stable rule IDs. A gesture has one owner: turning a shortcut on
+switches off whichever rule used that gesture, and the page names what changed.
+Custom rules can also be saved disabled. Multiple actions can be placed in one
+custom rule. Existing custom rules and explicitly saved sensitivity values are
+preserved.
 
-Shake counts are exact: a burst waits for **450 ms of quiet** before firing once.
-A triple shake cannot also trigger the double-shake shortcut. The flashlight
-handler tracks changes from Android Quick Settings as well as its own actions.
+A shake burst is dispatched after **450 ms of quiet**. A burst of N shakes
+satisfies rules asking for N or fewer, so the engine runs only the closest
+match: a triple shake never also runs the double-shake shortcut, and an
+over-counted double shake still runs the double-shake shortcut when that is the
+closest rule. The flashlight handler tracks changes from Android Quick Settings
+as well as its own actions.
 
 The system's Settings entry opens a dedicated preferences activity. Back returns
 to the caller, and it works even when the accessibility service is disabled.

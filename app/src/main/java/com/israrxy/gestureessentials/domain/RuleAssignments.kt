@@ -3,20 +3,32 @@ package com.israrxy.gestureessentials.domain
 import com.israrxy.gestureessentials.core.model.Rule
 import com.israrxy.gestureessentials.core.model.Trigger
 
-/** Check inside the repository's transaction as well as when rendering switches. */
+/**
+ * One gesture runs one rule. Enabling a rule therefore switches off any other
+ * enabled rule that owns the same gesture, instead of refusing the switch:
+ * the user's latest choice should take effect. The caller reports what changed.
+ */
 object RuleAssignments {
-    fun conflictFor(candidate: Rule, rules: List<Rule>): Rule? = rules.firstOrNull { other ->
+
+    data class Result(val rules: List<Rule>, val disabled: List<Rule>)
+
+    /** What currently owns the gesture, for rendering and conflict messages. */
+    fun conflictFor(candidate: Rule, rules: List<Rule>): Rule? = conflicts(candidate, rules).firstOrNull()
+
+    fun save(rules: List<Rule>, candidate: Rule): Result {
+        val displaced = if (candidate.enabled) conflicts(candidate, rules) else emptyList()
+        val disabledIds = displaced.mapTo(HashSet()) { it.id }
+        val updated = rules.map { rule ->
+            if (rule.id in disabledIds) rule.copy(enabled = false) else rule
+        }.filterNot { it.id == candidate.id } + candidate
+        return Result(updated, displaced)
+    }
+
+    private fun conflicts(candidate: Rule, rules: List<Rule>): List<Rule> = rules.filter { other ->
         other.id != candidate.id && other.enabled &&
             sameGesture(candidate.trigger, other.trigger) &&
             (candidate.constraints.screenOn == null || other.constraints.screenOn == null ||
                 candidate.constraints.screenOn == other.constraints.screenOn)
-    }
-
-    fun save(rules: List<Rule>, candidate: Rule): List<Rule> {
-        if (candidate.enabled) {
-            conflictFor(candidate, rules)?.let { throw RuleConflictException(it.name) }
-        }
-        return rules.filterNot { it.id == candidate.id } + candidate
     }
 
     private fun sameGesture(first: Trigger, second: Trigger): Boolean =
@@ -26,7 +38,3 @@ object RuleAssignments {
             first == second
         }
 }
-
-class RuleConflictException(ruleName: String) : IllegalStateException(
-    "This gesture is used by “$ruleName”. Turn that rule off first, or save this rule disabled.",
-)

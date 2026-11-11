@@ -47,7 +47,7 @@ class RuleEngine(
 
     private fun handle(event: TriggerEvent) {
         val now = SystemClock.elapsedRealtime()
-        val due = rules.filter { rule -> canRun(rule, event, now) }
+        val due = select(event, now)
         if (due.isEmpty()) return
 
         // One tick per event, not per rule, so overlapping rules do not buzz twice.
@@ -57,6 +57,14 @@ class RuleEngine(
             lastRunAt[rule.id] = now
             scope.launch { runCatching { actionExecutor.execute(rule.actions) } }
         }
+    }
+
+    /** Resolves competing shake rules before anything runs. */
+    private fun select(event: TriggerEvent, now: Long): List<Rule> {
+        val ready = rules.filter { rule -> canRun(rule, event, now) }
+        val shake = event as? TriggerEvent.Shake ?: return ready
+        val best = matcher.bestShakeCount(ready.map { it.trigger }, shake) ?: return emptyList()
+        return ready.filter { (it.trigger as? Trigger.Shake)?.count == best }
     }
 
     private fun canRun(rule: Rule, event: TriggerEvent, now: Long): Boolean {

@@ -33,6 +33,9 @@ class ShakeDetector(
     private var gravity: Float? = null
     private var lastSensitivity = sensitivityProvider()
 
+    /** One physical jolt counts once; the sensor must settle before re-arming. */
+    private var armed = true
+
     fun start() {
         if (accelerometer != null) {
             sensorManager?.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME)
@@ -44,6 +47,7 @@ class ShakeDetector(
         handler.removeCallbacks(finishSequence)
         sequence.reset()
         gravity = null
+        armed = true
     }
 
     override fun onSensorChanged(event: SensorEvent) {
@@ -65,10 +69,14 @@ class ShakeDetector(
             sequence.reset()
             handler.removeCallbacks(finishSequence)
             lastSensitivity = sensitivity
+            armed = true
         }
         // Lower sensitivity requires firmer, deliberate movement.
         val threshold = 4.2f - (sensitivity / 100f) * 3.0f
-        if (abs(magnitude - estimate) < threshold) return
+        val deviation = abs(magnitude - estimate)
+        if (deviation < threshold * REARM_FRACTION) armed = true
+        if (!armed || deviation < threshold) return
+        armed = false
 
         val now = SystemClock.elapsedRealtime()
         if (sequence.onPeak(now)) {
@@ -78,4 +86,9 @@ class ShakeDetector(
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
+
+    private companion object {
+        /** Below this fraction of the trigger level the sensor counts as settled. */
+        const val REARM_FRACTION = 0.4f
+    }
 }

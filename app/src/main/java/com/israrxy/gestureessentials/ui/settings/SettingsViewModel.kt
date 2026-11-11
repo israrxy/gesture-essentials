@@ -9,7 +9,6 @@ import com.israrxy.gestureessentials.core.model.Trigger
 import com.israrxy.gestureessentials.data.system.ServiceStatusRepository
 import com.israrxy.gestureessentials.data.system.SystemAccessRepository
 import com.israrxy.gestureessentials.domain.RuleAssignments
-import com.israrxy.gestureessentials.domain.RuleConflictException
 import com.israrxy.gestureessentials.domain.usecase.ObserveRulesUseCase
 import com.israrxy.gestureessentials.domain.usecase.ObserveSettingsUseCase
 import com.israrxy.gestureessentials.domain.usecase.SetPresetEnabledUseCase
@@ -46,23 +45,22 @@ class SettingsViewModel(
             presets = ShortcutPreset.entries.map { preset ->
                 val saved = rules.firstOrNull { it.id == preset.ruleId }
                 val candidate = saved ?: preset.newRule(settings.defaultCooldownMs, 0)
-                val conflict = RuleAssignments.conflictFor(candidate, rules)
                 PresetUiState(
                     preset = preset,
                     enabled = if (pending.ruleId == preset.ruleId) pending.enabled else candidate.enabled,
-                    unavailableReason = unavailableReason(preset, status)
-                        ?: conflict?.let { "Assigned to “${it.name}”. Turn it off first." },
+                    unavailableReason = unavailableReason(preset, status),
                 )
             },
             customRules = rules.filter { ShortcutPreset.fromRuleId(it.id) == null }.map { rule ->
                 CustomRuleUiState(
                     rule = if (pending.ruleId == rule.id) rule.copy(enabled = pending.enabled) else rule,
-                    conflictName = RuleAssignments.conflictFor(rule, rules)?.name,
+                    ownerName = RuleAssignments.conflictFor(rule, rules)?.name,
                 )
             },
             isLoading = false,
             isSaving = pending.isSaving,
             message = pending.message,
+            messageIsError = pending.messageIsError,
             serviceEnabled = status.serviceEnabled,
             dndAccess = status.dndAccess,
             batteryUnrestricted = status.batteryUnrestricted,
@@ -83,12 +81,14 @@ class SettingsViewModel(
         if (enabled && row.unavailableReason != null) return
         val cooldown = uiState.value.settings.defaultCooldownMs
         change(PendingEdit(ruleId = preset.ruleId, enabled = enabled)) {
-            setPresetEnabled(preset, enabled, cooldown)
+            takenOver(setPresetEnabled(preset, enabled, cooldown))
         }
     }
 
     fun onCustomRuleToggle(id: String, enabled: Boolean) {
-        change(PendingEdit(ruleId = id, enabled = enabled)) { setRuleEnabled(id, enabled) }
+        change(PendingEdit(ruleId = id, enabled = enabled)) {
+            takenOver(setRuleEnabled(id, enabled))
+        }
     }
 
     fun onThemeModeChange(mode: AppSettings.ThemeMode) = update { it.copy(themeMode = mode) }
@@ -108,22 +108,32 @@ class SettingsViewModel(
     }
 
     private fun update(transform: (AppSettings) -> AppSettings) {
-        change(PendingEdit(settings = transform(uiState.value.settings))) { updateSettings(transform) }
+        change(PendingEdit(settings = transform(uiState.value.settings))) {
+            updateSettings(transform)
+            null
+        }
     }
 
-    private fun change(pending: PendingEdit, block: suspend () -> Unit) {
+    /** A gesture has one owner; name whatever was switched off to make room. */
+    private fun takenOver(disabledNames: List<String>): String? = when (disabledNames.size) {
+        0 -> null
+        1 -> "Turned off “${disabledNames.single()}” because only one rule can use that gesture."
+        else -> "Turned off ${disabledNames.size} rules that used the same gesture."
+    }
+
+    private fun change(pending: PendingEdit, block: suspend () -> String?) {
         if (edit.value.isSaving || uiState.value.isLoading) return
         edit.value = pending.copy(isSaving = true)
         viewModelScope.launch {
             try {
-                block()
-                edit.value = PendingEdit()
+                val message = block()
+                edit.value = PendingEdit(message = message)
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {
                 edit.value = PendingEdit(
-                    message = if (error is RuleConflictException) error.message
-                    else "Couldn't save the change. Please try again.",
+                    message = "Couldn't save the change. Please try again.",
+                    messageIsError = true,
                 )
             }
         }
@@ -154,6 +164,7 @@ private data class PendingEdit(
     val enabled: Boolean = false,
     val settings: AppSettings? = null,
     val message: String? = null,
+    val messageIsError: Boolean = false,
 )
 
 private data class AccessState(

@@ -7,7 +7,7 @@ import com.israrxy.gestureessentials.core.model.TriggerEvent
 class TriggerMatcher {
 
     fun matches(trigger: Trigger, event: TriggerEvent): Boolean = when (trigger) {
-        is Trigger.Shake -> event is TriggerEvent.Shake && event.count == trigger.count
+        is Trigger.Shake -> event is TriggerEvent.Shake && event.count >= trigger.count
 
         is Trigger.Screen -> event is TriggerEvent.Screen && event.state == trigger.state
         is Trigger.Charger -> event is TriggerEvent.Charger && event.plugged == trigger.plugged
@@ -24,4 +24,14 @@ class TriggerMatcher {
         // a Wi-Fi callback. Rules using them stay inert instead of guessing.
         is Trigger.FaceDown, is Trigger.Wifi, is Trigger.Letter -> false
     }
+
+    /**
+     * A burst of N shakes satisfies every rule asking for N or fewer, so the
+     * engine must keep only the most specific one. Without this, a three-shake
+     * burst would also run the double-shake shortcut.
+     */
+    fun bestShakeCount(triggers: List<Trigger>, event: TriggerEvent.Shake): Int? =
+        triggers.filterIsInstance<Trigger.Shake>()
+            .filter { event.count >= it.count }
+            .maxOfOrNull { it.count }
 }

@@ -10,7 +10,6 @@ import com.israrxy.gestureessentials.core.model.ActionSpec
 import com.israrxy.gestureessentials.core.model.AppSettings
 import com.israrxy.gestureessentials.core.model.ShortcutPreset
 import com.israrxy.gestureessentials.data.repository.RulesRepositoryImpl
-import com.israrxy.gestureessentials.domain.RuleConflictException
 import com.israrxy.gestureessentials.domain.usecase.SetPresetEnabledUseCase
 import com.israrxy.gestureessentials.domain.usecase.SetRuleEnabledUseCase
 import java.io.File
@@ -65,6 +64,20 @@ class SettingsPersistenceTest {
     }
 
     @Test
+    fun enablingTheFlashlightPresetTakesOverTheExistingShakeRule() = runBlocking {
+        seedLegacyPreferences()
+        val repository = RulesRepositoryImpl(RulesDataSource(store))
+        val setPreset = SetPresetEnabledUseCase(repository)
+
+        val disabled = setPreset(ShortcutPreset.SHAKE_FLASHLIGHT, true, 2_000)
+
+        assertEquals(listOf("Shake x2"), disabled)
+        val rules = repository.observeRules().first()
+        assertFalse(rules.single { it.id == "existing-screenshot" }.enabled)
+        assertTrue(rules.single { it.id == ShortcutPreset.SHAKE_FLASHLIGHT.ruleId }.enabled)
+    }
+
+    @Test
     fun presetSwitchesAndAppearancePersistTogetherWithoutLosingCustomRules() = runBlocking {
         seedLegacyPreferences()
         val repository = RulesRepositoryImpl(RulesDataSource(store))
@@ -72,16 +85,7 @@ class SettingsPersistenceTest {
         val setEnabled = SetRuleEnabledUseCase(repository)
         val settings = SettingsDataSource(store)
 
-        // An unsuccessful enable leaves the DataStore and custom rule intact.
-        var conflict = false
-        try {
-            setPreset(ShortcutPreset.SHAKE_FLASHLIGHT, true, 2_000)
-        } catch (_: RuleConflictException) {
-            conflict = true
-        }
-        assertTrue(conflict)
-        assertEquals(1, repository.observeRules().first().size)
-
+        assertEquals(listOf("Shake x2"), setPreset(ShortcutPreset.SHAKE_FLASHLIGHT, true, 2_000))
         setEnabled("existing-screenshot", false)
         coroutineScope {
             repeat(8) {

@@ -65,7 +65,9 @@ fun SettingsScreen(
                     }
                 }
                 state.message?.let { message ->
-                    item("message") { SettingsMessage(message, onDismissMessage) }
+                    item("message") {
+                        SettingsMessage(message, state.messageIsError, onDismissMessage)
+                    }
                 }
                 item("presets_heading") { PreferenceHeading("Common shortcuts") }
                 items(state.presets, key = { it.preset.ruleId }) { row ->
@@ -154,8 +156,8 @@ private fun CustomRulePreference(
     ) {
         PreferenceText(
             title = rule.name,
-            subtitle = if (!rule.enabled && state.conflictName != null) {
-                "Gesture used by “${state.conflictName}”"
+            subtitle = if (!rule.enabled && state.ownerName != null) {
+                "Inactive — “${state.ownerName}” uses this gesture"
             } else {
                 "${rule.trigger.summary()} → ${rule.actions.joinToString(" → ", transform = ActionCatalog::summary)}"
             },
@@ -165,7 +167,7 @@ private fun CustomRulePreference(
         Switch(
             checked = rule.enabled,
             onCheckedChange = onToggle,
-            enabled = canChange && (rule.enabled || state.conflictName == null),
+            enabled = canChange,
             modifier = Modifier.semantics { contentDescription = "Enable ${rule.name}" },
         )
     }

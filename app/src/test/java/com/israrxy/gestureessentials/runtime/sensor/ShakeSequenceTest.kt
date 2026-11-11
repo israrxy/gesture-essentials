@@ -5,6 +5,7 @@ import com.israrxy.gestureessentials.core.model.TriggerEvent
 import com.israrxy.gestureessentials.runtime.engine.TriggerMatcher
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -32,8 +33,11 @@ class ShakeSequenceTest {
         sequence.finishIfQuiet(850)
         val event = TriggerEvent.Shake(counts.single())
         val matcher = TriggerMatcher()
+        assertEquals(3, event.count)
         assertTrue(matcher.matches(Trigger.Shake(3), event))
-        assertFalse(matcher.matches(Trigger.Shake(2), event))
+        assertTrue(matcher.matches(Trigger.Shake(2), event))
+        // The engine runs only the most specific match.
+        assertEquals(3, matcher.bestShakeCount(listOf(Trigger.Shake(2), Trigger.Shake(3)), event))
     }
 
     @Test
@@ -48,12 +52,24 @@ class ShakeSequenceTest {
     }
 
     @Test
-    fun aLongerBurstIsNotMistakenForEitherPreset() {
+    fun anOverCountedBurstRunsTheClosestShortcut() {
         listOf(0L, 200L, 400L, 600L).forEach { sequence.onPeak(it) }
         sequence.finishIfQuiet(1_050)
         val event = TriggerEvent.Shake(counts.single())
-        assertFalse(TriggerMatcher().matches(Trigger.Shake(2), event))
-        assertFalse(TriggerMatcher().matches(Trigger.Shake(3), event))
+        val matcher = TriggerMatcher()
+        assertFalse(matcher.matches(Trigger.Shake(5), event))
+        assertEquals(3, matcher.bestShakeCount(listOf(Trigger.Shake(2), Trigger.Shake(3)), event))
+    }
+
+    @Test
+    fun aSingleShakeMatchesNothing() {
+        sequence.onPeak(0)
+        sequence.finishIfQuiet(450)
+        val event = TriggerEvent.Shake(counts.single())
+        val matcher = TriggerMatcher()
+        assertEquals(1, event.count)
+        assertFalse(matcher.matches(Trigger.Shake(2), event))
+        assertNull(matcher.bestShakeCount(listOf(Trigger.Shake(2)), event))
     }
 
     @Test
